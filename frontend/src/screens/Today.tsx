@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button'
 import { fromISO, greeting, relativeDayLabel, toISO, todayISO } from '@/lib/dates'
 import { kcal } from '@/lib/format'
 import { useSelectedDate } from '@/lib/selectedDate'
-import { useDailyInsights, useDaySummary, usePreferences } from '@/services/queries'
+import { useDailyInsights, useDaySummary, usePreferences, useProfile } from '@/services/queries'
 import { Emoji, greetingEmoji } from '@/lib/emoji'
 import type { DailyInsight } from '@/core/types'
 
@@ -30,6 +30,7 @@ export function TodayScreen() {
   const day = useDaySummary(date)
   const insights = useDailyInsights(date)
   const prefs = usePreferences()
+  const profile = useProfile()
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [editing, setEditing] = useState<LogEntry | null>(null)
   const isToday = date === todayISO()
@@ -78,6 +79,20 @@ export function TodayScreen() {
         <TodaySkeleton />
       ) : (
         <div className="space-y-4">
+          {profile.data === null && (
+            <button
+              type="button"
+              onClick={() => navigate('/settings#profile')}
+              className="flex w-full items-center gap-3 rounded-[var(--radius-card)] bg-linear-to-br from-meal-snacks to-sage-soft p-4 text-left transition active:scale-[0.99]"
+            >
+              <Emoji className="text-[28px]">👤</Emoji>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-semibold">Personalise your targets</span>
+                <span className="block text-[13px] text-foreground/70">Add your age, height, weight and goal — we’ll calculate what you need (EU guidelines).</span>
+              </span>
+              <ChevronRight className="size-5 shrink-0 text-muted" />
+            </button>
+          )}
           <Card className="flex flex-col items-center gap-5 bg-linear-to-br from-surface via-surface to-soft sm:flex-row sm:items-center sm:gap-8">
             <CalorieProgress consumed={day.data.totals.calories} target={day.data.goals.calories} />
             <div className="grid w-full grid-cols-2 gap-x-4 gap-y-3 sm:flex-1">

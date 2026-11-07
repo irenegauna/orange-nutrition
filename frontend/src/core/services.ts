@@ -6,6 +6,8 @@
 import type {
   AiStatus,
   PhotoAnalysis,
+  ProfileInput,
+  ProfileState,
   Macros,
   AssistantReply,
   ChatTurn,
@@ -120,6 +122,13 @@ export interface PhotoService {
   discard(photoId: string): Promise<void>
 }
 
+/** Body data → calculated daily targets (EU / Spanish references). */
+export interface ProfileService {
+  get(): Promise<ProfileState | null>
+  /** Saves the profile and replaces today's targets with the calculated ones. */
+  save(input: ProfileInput): Promise<ProfileState>
+}
+
 export interface NutritionBackend {
   foods: FoodService
   barcode: BarcodeService
@@ -132,5 +141,6 @@ export interface NutritionBackend {
   preferences: PreferenceService
   backup: BackupService
   ai: AiService
+  profile: ProfileService
   photo: PhotoService
 }

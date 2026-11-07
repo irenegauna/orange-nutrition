@@ -221,3 +221,23 @@ export const aiSettingsSchema = z.object({
   aiSuggestionsEnabled: z.boolean(),
   consentAcceptedAt: isoTimestampSchema.nullable(),
 });
+
+// ── Personal profile ─────────────────────────────────────────────────────
+export const userProfileInputSchema = z.object({
+  sex: z.enum(['female', 'male']),
+  age: z.number().int('Age must be a whole number').min(18, 'Targets are for adults (18+)').max(110, 'Check the age'),
+  heightCm: z.number().min(120, 'Height looks too low (cm)').max(230, 'Height looks too high (cm)'),
+  weightKg: z.number().min(30, 'Weight looks too low (kg)').max(300, 'Weight looks too high (kg)'),
+  activity: z.enum(['sedentary', 'moderate', 'active', 'very_active']),
+  objective: z.enum(['lose', 'maintain', 'gain']),
+});
+
+export const userProfileSchema = z.object({
+  sex: z.enum(['female', 'male']),
+  birthYear: z.number().int().min(1900).max(2100),
+  heightCm: z.number().min(120).max(230),
+  weightKg: z.number().min(30).max(300),
+  activity: z.enum(['sedentary', 'moderate', 'active', 'very_active']),
+  objective: z.enum(['lose', 'maintain', 'gain']),
+  updatedAt: z.string(),
+});

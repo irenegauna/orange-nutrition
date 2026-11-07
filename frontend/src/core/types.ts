@@ -391,3 +391,41 @@ export interface PhotoAnalysis {
   photoId?: string
   model: string
 }
+
+// ── Personal profile (targets are calculated from it, never typed in) ───
+export type Sex = 'female' | 'male'
+export type ActivityLevel = 'sedentary' | 'moderate' | 'active' | 'very_active'
+export type WeightObjective = 'lose' | 'maintain' | 'gain'
+
+export interface ProfileInput {
+  sex: Sex
+  age: number
+  heightCm: number
+  weightKg: number
+  activity: ActivityLevel
+  objective: WeightObjective
+}
+
+/** How the backend derived the targets (EFSA / EASO / AESAN). */
+export interface TargetBreakdown {
+  age: number
+  bmi: number
+  restingKcal: number
+  pal: number
+  maintenanceKcal: number
+  adjustmentKcal: number
+  energyKcal: number
+  proteinGPerKg: number
+  proteinReferenceWeightKg: number
+  fatPercentEnergy: number
+  carbPercentEnergy: number
+  micronutrientReference: string
+  warnings: string[]
+  sources: string[]
+}
+
+export interface ProfileState {
+  profile: ProfileInput
+  targets: Goals
+  breakdown: TargetBreakdown
+}

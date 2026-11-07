@@ -3,6 +3,7 @@ import type { NutrientCoverage, NutrientInfo } from '@/core/types'
 import { nutrientAmount, percent } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { classifyNutrientStatus, type NutrientStatus } from './nutrientStatus'
+import { NUTRIENT_INFO } from '@/lib/nutrientInfo'
 
 const STATUS_COPY: Record<NutrientStatus, string> = {
   'no-data': 'No data yet',
@@ -59,6 +60,7 @@ export function NutrientProgress({
           <span className="truncate text-[15px] font-medium">{info.label}</span>
           <NutrientStatusBadge status={status} isLimit={info.isLimit} noTarget={coverage.target === null} />
         </div>
+        <p className="truncate text-[12px] text-muted">{NUTRIENT_INFO[info.key].short}</p>
         <div className="mt-2">
           {status === 'no-data' ? (
             <div className="h-2 rounded-full border border-dashed border-muted/40" />

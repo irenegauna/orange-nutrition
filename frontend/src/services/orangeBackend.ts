@@ -31,6 +31,8 @@ import {
   type NutrientCoverage,
   type NutritionValues,
   type Preferences,
+  type ProfileInput,
+  type ProfileState,
   type Quantity,
   type Recipe,
   type RecipeDraft,
@@ -38,7 +40,6 @@ import {
   type Recommendation,
   type Serving,
 } from '@/core/types'
-import { DEFAULT_REFERENCE_PROFILE, EU_MACRO_REFERENCE, referenceProfile } from '@/core/references'
 import { AR_FRACTION, MIN_COMPLETENESS_FOR_LOW } from '@/components/nutrients/nutrientStatus'
 
 // ── ids & meal types ─────────────────────────────────────────────────────
@@ -54,10 +55,6 @@ const toUIMeal = (m: B.MealType): MealType => (m === 'snack' ? 'snacks' : m)
 // ── initialization ───────────────────────────────────────────────────────
 let initPromise: Promise<void> | null = null
 
-/** Targets seeded on first run: EU Reference Intakes + AESAN 2019 (see src/core/references.ts). */
-function defaultGoals(): Goals {
-  return { ...EU_MACRO_REFERENCE, micros: { ...referenceProfile(DEFAULT_REFERENCE_PROFILE).micros } }
-}
 
 function toBackendTargets(g: Goals, origin: 'user' | 'reference'): B.DailyGoals['targets'] {
   const t: B.DailyGoals['targets'] = {}
@@ -80,7 +77,10 @@ async function ready() {
   initPromise ??= (async () => {
     await B.initializeApp()
     // Fresh install: seed EU/AESAN targets from a past date so every day has goals.
-    if ((await B.listGoalHistory()).length === 0) await B.setGoals(toBackendTargets(defaultGoals(), 'reference'), '2000-01-01')
+    // No profile yet: EU Reference Intakes + AESAN (backend defaults), from a past date so every day has goals.
+    if ((await B.listGoalHistory()).length === 0) await B.setGoals(B.defaultEuTargets(), '2000-01-01')
+    // With a profile: keep today's targets in line with it (e.g. a birthday changes the age band).
+    await B.refreshTargetsForAge()
   })().catch((e) => {
     initPromise = null
     throw e
@@ -579,6 +579,31 @@ const photoService = initialized({
   },
 })
 
+function profileToUI(r: B.ProfileWithTargets): ProfileState {
+  const { profile: p, age, personal } = r
+  const b = personal.breakdown
+  return {
+    profile: { sex: p.sex, age, heightCm: p.heightCm, weightKg: p.weightKg, activity: p.activity, objective: p.objective },
+    targets: goalsToUI({ id: 'calculated', effectiveFrom: B.today(), targets: personal.targets, createdAt: '', updatedAt: '' }),
+    breakdown: { ...b, warnings: [...b.warnings], sources: [...b.sources] },
+  }
+}
+
+const profileService = initialized({
+  async get() {
+    const r = await B.getProfileWithTargets()
+    return r ? profileToUI(r) : null
+  },
+  async save(input: ProfileInput) {
+    try {
+      return profileToUI(await B.saveProfile(input))
+    } catch (e) {
+      if (e instanceof B.DataError && Array.isArray(e.details) && e.details.length) throw new Error(String(e.details[0]).replace(/^[a-zA-Z]+: /, ''))
+      throw e
+    }
+  },
+})
+
 const aiService = initialized({
   async status() {
     return aiStatus(await B.getAiSettingsPublic())
@@ -606,6 +631,7 @@ const aiService = initialized({
 
 export const orangeBackend: NutritionBackend = {
   ai: aiService,
+  profile: profileService,
   photo: photoService,
   foods: initialized({
     async search(query: string) {

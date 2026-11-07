@@ -2,6 +2,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import type {
   AiStatus,
+  ProfileInput,
   ChatTurn,
   CustomFoodInput,
   Goals,
@@ -174,6 +175,13 @@ export function useAsk() {
 }
 
 // ── AI (Gemini) ──────────────────────────────────────────────────────────
+// ── Profile → calculated targets ─────────────────────────────────────────
+export const useProfile = () => useQuery({ queryKey: ['profile'], queryFn: () => api.profile.get() })
+export function useSaveProfile() {
+  const qc = useQueryClient()
+  return useMutation({ mutationFn: (p: ProfileInput) => api.profile.save(p), onSuccess: () => qc.invalidateQueries() })
+}
+
 export const useAiStatus = () => useQuery({ queryKey: qk.ai, queryFn: () => api.ai.status() })
 
 function useAiMutation<V>(fn: (v: V) => Promise<AiStatus>) {

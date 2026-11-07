@@ -547,3 +547,58 @@ export interface PhotoRecognitionResult {
   model: string;
   createdAt: IsoTimestamp;
 }
+
+// ---------------------------------------------------------------------------
+// Personal profile & personalised targets (EU / Spanish references)
+// ---------------------------------------------------------------------------
+
+export type Sex = 'female' | 'male';
+
+/** EFSA physical activity levels (PAL 1.4 / 1.6 / 1.8 / 2.0). */
+export type ActivityLevel = 'sedentary' | 'moderate' | 'active' | 'very_active';
+
+export type WeightObjective = 'lose' | 'maintain' | 'gain';
+
+/**
+ * The user's body data, stored only on the device (meta table). Used solely to calculate
+ * daily targets. Adults (18+) only: the EFSA/AESAN references used are for adults.
+ */
+export interface UserProfile {
+  sex: Sex;
+  /** Stored instead of age so the targets stay right as years pass. */
+  birthYear: number;
+  heightCm: number;
+  weightKg: number;
+  activity: ActivityLevel;
+  objective: WeightObjective;
+  updatedAt: IsoTimestamp;
+}
+
+/** How the targets were derived — shown to the user. */
+export interface TargetBreakdown {
+  age: number;
+  bmi: number;
+  /** Resting energy expenditure, Henry (2005) equations as used by EFSA (2013). kcal/day. */
+  restingKcal: number;
+  pal: number;
+  /** restingKcal × pal */
+  maintenanceKcal: number;
+  /** Change applied for the objective (negative = deficit), after safety floors. kcal/day. */
+  adjustmentKcal: number;
+  energyKcal: number;
+  proteinGPerKg: number;
+  /** Body weight used for protein (actual; ESPEN adjusted weight from BMI 30). */
+  proteinReferenceWeightKg: number;
+  fatPercentEnergy: number;
+  carbPercentEnergy: number;
+  /** e.g. "Women 20–49 (AESAN 2019)". */
+  micronutrientReference: string;
+  /** Safety notes (e.g. floor applied, weight loss not advised at this BMI). */
+  warnings: string[];
+  sources: string[];
+}
+
+export interface PersonalTargets {
+  targets: DailyGoals['targets'];
+  breakdown: TargetBreakdown;
+}

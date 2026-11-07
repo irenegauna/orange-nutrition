@@ -23,7 +23,7 @@ const summary = await getDailySummary();   // totals, per meal, goal progress, r
 | Coverage vs intake | `NutrientTotal.amount` is intake from items **with data**; `coverage.ratio` (0–1, mass-weighted) is how much of what was eaten had data. Show both; `coverage.withData === 0` means "no data", not 0. |
 | History | `MealEntry.snapshot` + `MealEntry.nutrients` are frozen at log time. Editing/deleting foods or recipes never changes past days. |
 | Attribution | Show `food.source.attribution` (USDA FoodData Central / "Data from Open Food Facts", ODbL) on food detail screens. |
-| Medical | Reference targets (`REFERENCE_DAILY_VALUES`) are general FDA Daily Values, informational only. No deficiency inference. |
+| Medical | Targets come from the profile (EU/Spanish references, see *Personal profile*) or `defaultEuTargets()`. `REFERENCE_DAILY_VALUES` (FDA) remain for `applyReferenceMicronutrientTargets`. Informational only; no deficiency inference. |
 
 ## Startup & storage
 
@@ -99,7 +99,29 @@ Behaviour: found products are cached 30 days and saved to `foods` (searchable of
 | `getPreferences()` / `updatePreferences(patch)` | `diets`, `allergies`, `dislikedFoodIds`, `dislikedKeywords`, `favoriteFoodIds`, `favoriteRecipeIds`, `availableIngredientIds`, `maxPrepTimeMinutes`, `weekStartsOn`, `unitSystem`. |
 | `setDiets`, `setAllergies`, `setDislikedFood`, `setDislikedKeywords`, `setAvailableIngredients` | Shortcuts. |
 
-No weight, height, age or medical data is collected.
+## Personal profile & calculated targets (EU / Spanish references)
+
+The user enters sex, age, height, weight, activity level and objective; daily targets are **calculated**, not typed in.
+The profile is stored only on the device (`meta` table, key `userProfile`; birth year is stored instead of age) and is not included in JSON backups.
+
+| Function | Description |
+|---|---|
+| `saveProfile({ sex, age, heightCm, weightKg, activity, objective })` | Validates (adults 18+), stores the profile and writes the calculated targets as goals from today (past days keep their goals). Returns `{ profile, age, personal: { targets, breakdown } }`. |
+| `getProfile()` / `getProfileWithTargets()` | Read the profile (null if not set) / profile + targets it implies today. |
+| `refreshTargetsForAge()` | Re-writes today's goals if the profile now implies different ones (e.g. after a birthday changes the age band). Call on startup. |
+| `computePersonalTargets(profile, date)` | Pure calculation (see below). `breakdown` explains every number (REE, PAL, deficit, protein g/kg, % energy, AESAN band, warnings, sources). |
+| `defaultEuTargets()` | Targets for people without a profile: EU Reference Intakes + AESAN. |
+
+How targets are derived (`core/nutrition/requirements.ts`):
+- **Energy** — EFSA (2013): REE from the Henry (2005) equations × PAL (`sedentary` 1.4, `moderate` 1.6, `active` 1.8, `very_active` 2.0).
+- **Objective** — lose: −600 kcal/day (EASO 2015, ≈ 0.5 kg/week), never below max(REE, 1,200 kcal) (NICE NG246: 800–1,200 kcal only in specialist care); no deficit when BMI < 18.5 (WHO underweight). Gain: +10 % of maintenance (conservative end of Iraki et al. 2019's ~10–20 %).
+- **Protein** — EFSA PRI 0.83 g/kg/day; 1.2 g/kg when losing or gaining (lower bound of 1.2–1.6 g/kg for lean-mass preservation, Leidy et al. 2015; within EFSA's ≤ 2× PRI safe range). Actual weight up to BMI 30; ESPEN adjusted body weight (BMI-25 weight + ⅓ of the excess) with obesity.
+- **Fat / carbohydrate** — fat 30 % energy, carbohydrate the remainder within EFSA's 45–60 % E. **Fibre** 25 g (EFSA AI).
+- **Limits** — sodium 2 g (EFSA 2019); saturated fat ≤ 10 % of energy (WHO 2023); total sugars scaled from the EU Reference Intake (90 g at 2,000 kcal) — WHO's < 10 % E is for *free* sugars, which food data doesn't separate.
+- **Accuracy** — Henry predicts REE within ±10 % for ~65–75 % of adults in validation studies; targets are a starting point to adjust from real weight change.
+- **Vitamins & minerals** — AESAN (2019) by sex and age band (`aesanMicronutrients`).
+
+Informational only — not medical advice. No other personal or medical data is collected.
 
 ## History & analytics
 

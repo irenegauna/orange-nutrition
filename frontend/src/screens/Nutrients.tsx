@@ -11,6 +11,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/States'
 import { FoodListItem } from '@/components/food/FoodListItem'
 import { FoodDetailSheet } from '@/components/food/FoodDetailSheet'
 import { foodEmoji } from '@/lib/emoji'
+import { MACRO_INFO, NUTRIENT_INFO } from '@/lib/nutrientInfo'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Sheet } from '@/components/ui/sheet'
@@ -73,6 +74,7 @@ export function NutrientsScreen() {
             )}
           </Card>
 
+          <MacroInfoCard />
           {GROUPS.map((g) => (
             <NutrientGroupCard key={g.key} label={g.label} emoji={g.emoji} tint={g.tint} items={byGroup(g.key)} onSelect={setSelected} defaultOpen={g.key !== 'other'} />
           ))}
@@ -181,6 +183,17 @@ function NutrientDetailSheet({
         <LoadingState rows={3} />
       ) : (
         <div className="space-y-5 pt-1">
+          <div className="space-y-2 rounded-2xl bg-linear-to-br from-soft to-meal-lunch p-4 text-[14.5px] leading-relaxed">
+            <p>
+              <span aria-hidden className="emoji mr-1.5">💡</span>
+              {NUTRIENT_INFO[d.info.key].does}
+            </p>
+            <p className="text-[13px] text-foreground/75">
+              <span aria-hidden className="emoji mr-1.5">🍽️</span>
+              {d.info.isLimit ? 'Mostly from: ' : 'Find it in: '}
+              {NUTRIENT_INFO[d.info.key].foods}
+            </p>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <Tile label="Recorded intake" value={d.coverage.reportingEntries ? nutrientAmount(d.coverage.intake, d.info.unit) : '—'} />
             <Tile label={d.info.isLimit ? 'Limit' : 'Reference target'} value={d.coverage.target ? nutrientAmount(d.coverage.target, d.info.unit) : 'Not set'} />
@@ -249,5 +262,49 @@ function Tile({ label, value, hint }: { label: string; value: string; hint?: str
       <p className="mt-0.5 tabular text-[18px] font-semibold tracking-tight">{value}</p>
       {hint && <p className="mt-0.5 text-[11.5px] leading-snug text-muted">{hint}</p>}
     </div>
+  )
+}
+
+const MACRO_ROWS: { key: keyof typeof MACRO_INFO; label: string; emoji: string }[] = [
+  { key: 'calories', label: 'Energy (kcal)', emoji: '🔥' },
+  { key: 'protein', label: 'Protein', emoji: '💪' },
+  { key: 'carbs', label: 'Carbohydrates', emoji: '🍞' },
+  { key: 'fat', label: 'Fat', emoji: '🥑' },
+  { key: 'fiber', label: 'Fiber', emoji: '🌾' },
+]
+
+function MacroInfoCard() {
+  return (
+    <Collapsible.Root>
+      <Card className="p-0">
+        <Collapsible.Trigger className="group flex min-h-14 w-full items-center gap-3 px-5 py-3 text-left">
+          <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-meal-snacks">
+            <span aria-hidden className="emoji text-[20px]">📖</span>
+          </span>
+          <span className="flex-1">
+            <span className="block text-[16px] font-semibold tracking-tight">What each nutrient does</span>
+            <span className="block text-[12.5px] text-muted">Energy & macros here · tap any vitamin or mineral below</span>
+          </span>
+          <ChevronDown className="size-5 text-muted transition group-data-[state=open]:rotate-180" />
+        </Collapsible.Trigger>
+        <Collapsible.Content>
+          <ul className="space-y-3 px-5 pb-5">
+            {MACRO_ROWS.map((m) => {
+              const info = MACRO_INFO[m.key]
+              return (
+                <li key={m.key} className="flex gap-3">
+                  <span aria-hidden className="emoji mt-0.5 text-[18px]">{m.emoji}</span>
+                  <div className="text-[14px] leading-relaxed">
+                    <p className="font-semibold">{m.label}</p>
+                    <p className="text-foreground/80">{info.does}</p>
+                    {'foods' in info && <p className="text-[12.5px] text-muted">Find it in: {info.foods}</p>}
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        </Collapsible.Content>
+      </Card>
+    </Collapsible.Root>
   )
 }
