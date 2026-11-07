@@ -26,6 +26,8 @@ const OBJECTIVES: { value: WeightObjective; label: string; emoji: string }[] = [
   { value: 'gain', label: 'Gain', emoji: '📈' },
 ]
 
+const FIELD_NAMES: Record<string, string> = { sex: 'sex', age: 'age', heightCm: 'height', weightKg: 'weight' }
+
 interface Draft {
   sex: Sex | null
   age: string
@@ -62,30 +64,37 @@ export function ProfileSection({ fallbackGoals }: { fallbackGoals: Goals }) {
 
   async function submit() {
     const e: Partial<Record<keyof Draft, string>> = {}
-    const num = (v: string) => Number(v.replace(',', '.'))
-    if (!draft!.sex) e.sex = 'Choose one'
-    if (!draft!.age.trim() || !Number.isInteger(num(draft!.age))) e.age = 'Enter your age in years'
-    if (!draft!.heightCm.trim() || !(num(draft!.heightCm) > 0)) e.heightCm = 'Enter your height in cm'
-    if (!draft!.weightKg.trim() || !(num(draft!.weightKg) > 0)) e.weightKg = 'Enter your weight in kg'
+    // Accept "59,2", "59 kg", "1,64" (metres) etc.
+    const num = (v: string) => Number(v.replace(',', '.').replace(/[^0-9.]/g, ''))
+    const age = num(draft!.age)
+    let height = num(draft!.heightCm)
+    if (height > 0 && height < 3) height = Math.round(height * 100) // entered in metres
+    const weight = num(draft!.weightKg)
+    if (!draft!.sex) e.sex = 'Choose female or male'
+    if (!draft!.age.trim() || !Number.isInteger(age) || age <= 0) e.age = 'Enter your age in years'
+    if (!(height > 0)) e.heightCm = 'Enter your height in cm'
+    if (!(weight > 0)) e.weightKg = 'Enter your weight in kg'
     setErrors(e)
-    if (Object.keys(e).length) return
+    const missing = Object.keys(e) as (keyof Draft)[]
+    if (missing.length) {
+      toast.error(`Please complete: ${missing.map((k) => FIELD_NAMES[k]).join(', ')}`)
+      const first = document.querySelector<HTMLElement>(`[data-field="${missing[0]}"]`)
+      first?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      first?.querySelector<HTMLElement>('input, button')?.focus({ preventScroll: true })
+      return
+    }
     try {
-      await save.mutateAsync({
-        sex: draft!.sex!,
-        age: num(draft!.age),
-        heightCm: num(draft!.heightCm),
-        weightKg: num(draft!.weightKg),
-        activity: draft!.activity,
-        objective: draft!.objective,
-      })
+      await save.mutateAsync({ sex: draft!.sex!, age, heightCm: height, weightKg: weight, activity: draft!.activity, objective: draft!.objective })
+      if (height !== num(draft!.heightCm)) setDraft({ ...draft!, heightCm: String(height) })
       toast.success('🎯 Your daily targets are updated')
+      setTimeout(() => document.getElementById('targets')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not save your profile')
     }
   }
 
   const field = (key: 'age' | 'heightCm' | 'weightKg', label: string, unit: string, placeholder: string) => (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5" data-field={key}>
       <Label htmlFor={`profile-${key}`}>{label}</Label>
       <div className="relative">
         <Input
@@ -109,7 +118,7 @@ export function ProfileSection({ fallbackGoals }: { fallbackGoals: Goals }) {
         <h2 className="px-1 text-[13px] font-semibold uppercase tracking-wide text-muted">👤 About you</h2>
         <p className="mb-2 mt-0.5 px-1 text-[13px] text-muted">Your daily targets are calculated from this, following EU and Spanish references. Stored only on this device.</p>
         <Card className="space-y-5">
-          <div className="space-y-1.5">
+          <div className="space-y-1.5" data-field="sex">
             <Label>Sex</Label>
             <SegmentedControl<Sex | ''>
               label="Sex"
@@ -181,7 +190,7 @@ function TargetsCard({ state, fallbackGoals }: { state: ProfileState | null; fal
   const b = state?.breakdown
   const micros = (Object.keys(NUTRIENTS) as MicronutrientKey[]).filter((k) => g.micros[k] !== undefined)
   return (
-    <section>
+    <section id="targets" className="scroll-mt-4">
       <h2 className="px-1 text-[13px] font-semibold uppercase tracking-wide text-muted">🎯 Your daily targets</h2>
       <p className="mb-2 mt-0.5 px-1 text-[13px] text-muted">
         {state ? 'Calculated for you — update your details above to change them.' : 'General EU reference intakes for now. Fill in your details above to personalise them.'}

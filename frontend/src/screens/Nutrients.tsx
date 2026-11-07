@@ -7,7 +7,7 @@ import { NutrientProgress, NutrientStatusBadge } from '@/components/nutrients/Nu
 import { classifyNutrientStatus } from '@/components/nutrients/nutrientStatus'
 import { MacroProgressBar } from '@/components/MacroProgressBar'
 import { PageHeader } from '@/components/PageHeader'
-import { EmptyState, ErrorState, LoadingState } from '@/components/States'
+import { ErrorState, LoadingState } from '@/components/States'
 import { FoodListItem } from '@/components/food/FoodListItem'
 import { FoodDetailSheet } from '@/components/food/FoodDetailSheet'
 import { foodEmoji } from '@/lib/emoji'
@@ -45,17 +45,20 @@ export function NutrientsScreen() {
         <ErrorState error={report.error} onRetry={() => report.refetch()} />
       ) : !report.data ? (
         <LoadingState rows={5} />
-      ) : report.data.entryCount === 0 ? (
-        <Card>
-          <EmptyState
-            emoji="🥦"
-            title="No foods logged for this day"
-            message="Vitamins and minerals appear here as you log meals."
-            action={<Button onClick={() => navigate('/add')}>Log food</Button>}
-          />
-        </Card>
       ) : (
         <div className="space-y-4">
+          {report.data.entryCount === 0 && (
+            <Card className="flex items-center gap-3 p-4">
+              <span aria-hidden className="emoji text-[26px]">🥦</span>
+              <p className="min-w-0 flex-1 text-[14px] leading-snug">
+                Nothing logged for this day yet. Browse below to learn what each nutrient does.
+              </p>
+              <Button size="sm" onClick={() => navigate('/add')}>
+                Log food
+              </Button>
+            </Card>
+          )}
+          <MacroInfoCard />
           <Card>
             <h2 className="text-[13px] font-semibold uppercase tracking-wide text-muted">Coverage</h2>
             <div className="mt-3 grid grid-cols-3 gap-2 text-center">
@@ -74,7 +77,6 @@ export function NutrientsScreen() {
             )}
           </Card>
 
-          <MacroInfoCard />
           {GROUPS.map((g) => (
             <NutrientGroupCard key={g.key} label={g.label} emoji={g.emoji} tint={g.tint} items={byGroup(g.key)} onSelect={setSelected} defaultOpen={g.key !== 'other'} />
           ))}
