@@ -1,17 +1,33 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#FFC36B"/>
-      <stop offset="1" stop-color="#F07F2E"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF7EE"/>
+      <stop offset="1" stop-color="#FFDDBD"/>
     </linearGradient>
+    <radialGradient id="fruit" cx="0.38" cy="0.34" r="0.75">
+      <stop offset="0" stop-color="#FFC266"/>
+      <stop offset="0.45" stop-color="#FF9A3C"/>
+      <stop offset="1" stop-color="#E5621A"/>
+    </radialGradient>
+    <radialGradient id="shine" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8BD48F"/>
+      <stop offset="1" stop-color="#3E9A5A"/>
+    </linearGradient>
+    <pattern id="dimples" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="6" cy="6" r="1.6" fill="#C8500F" opacity="0.18"/>
+      <circle cx="17" cy="15" r="1.4" fill="#C8500F" opacity="0.14"/>
+    </pattern>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <circle cx="256" cy="282" r="148" fill="#FFF9F3"/>
-  <circle cx="256" cy="282" r="122" fill="#FFB648"/>
-  <g stroke="#FFF9F3" stroke-width="10" stroke-linecap="round" opacity="0.9">
-    <line x1="256" y1="282" x2="256" y2="168"/><line x1="256" y1="282" x2="355" y2="225"/><line x1="256" y1="282" x2="355" y2="339"/>
-    <line x1="256" y1="282" x2="256" y2="396"/><line x1="256" y1="282" x2="157" y2="339"/><line x1="256" y1="282" x2="157" y2="225"/>
-  </g>
-  <path d="M262 136c10-38 44-62 86-60-6 40-40 66-86 60z" fill="#5DBB7A"/>
-  <path d="M254 140c-2-22-12-40-30-52" stroke="#357C4F" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <ellipse cx="256" cy="436" rx="130" ry="18" fill="#E0661B" opacity="0.18"/>
+  <circle cx="256" cy="286" r="150" fill="url(#fruit)"/>
+  <circle cx="256" cy="286" r="150" fill="url(#dimples)"/>
+  <ellipse cx="200" cy="222" rx="46" ry="30" transform="rotate(-35 200 222)" fill="url(#shine)"/>
+  <path d="M252 140 C250 118 256 100 270 86" stroke="#6B4A2B" stroke-width="12" stroke-linecap="round" fill="none"/>
+  <path d="M266 118 C292 70 352 58 396 76 C378 122 320 146 266 118 Z" fill="url(#leaf)"/>
+  <path d="M278 114 C316 100 352 88 384 80" stroke="#2F7D47" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.6"/>
 </svg>
