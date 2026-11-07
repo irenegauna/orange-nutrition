@@ -56,13 +56,13 @@ describe('repositories & seed', () => {
 
   it('searches foods by token prefix, alias and barcode with ranking', async () => {
     await seedDatabase();
-    const res = await searchFoods('chicken breast');
-    expect(res[0]?.food.name).toMatch(/^Chicken breast/);
+    const res = await searchFoods('pechuga de pollo');
+    expect(res[0]?.food.name).toMatch(/^Pechuga de pollo/);
     expect(res.every((r) => r.food.name.toLowerCase().includes('chicken'))).toBe(true);
-    const alias = await searchFoods('courgette');
-    expect(alias[0]?.food.name).toMatch(/Zucchini/);
-    const eggs = await searchFoods('eggs');
-    expect(eggs[0]?.food.name).toMatch(/^Egg/);
+    const alias = await searchFoods('zapallito'); // Latin-American alias for calabacín
+    expect(alias[0]?.food.name).toMatch(/Calabacín/);
+    const eggs = await searchFoods('huevos'); // plural
+    expect(eggs[0]?.food.name).toMatch(/^Huevo/);
     await foodRepository.put(makeFood('food_bar', { energy: k(400) }, { name: 'Granola Bar', barcode: '3017620422003' }));
     const byCode = await searchFoods('3017620422003');
     expect(byCode[0]).toMatchObject({ matchType: 'barcode' });

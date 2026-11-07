@@ -14,7 +14,8 @@ import { Input, Label } from '@/components/ui/input'
 import { Sheet } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Emoji, foodEmoji } from '@/lib/emoji'
-import { MEAL_LABELS, kcal } from '@/lib/format'
+import { capitalize } from '@/lib/dates'
+import { TO_MEAL, kcal } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { api } from '@/services'
 import { useAiStatus, useAnalyzePhoto, useFoodPreview, useFoodSearch, useLogPhotoMeal, usePhotoTotals, useSetPhotoEnabled } from '@/services/queries'
@@ -52,7 +53,7 @@ export function PhotoTab({ meal: initialMeal, date }: { meal: MealType; date: st
     e.target.value = ''
     if (!file) return
     if (!file.type.startsWith('image/')) {
-      toast.error('Please choose a photo')
+      toast.error('Elige una foto')
       return
     }
     setError(null)
@@ -101,19 +102,19 @@ export function PhotoTab({ meal: initialMeal, date }: { meal: MealType; date: st
       <Card>
         <EmptyState
           emoji="📸"
-          title="Log a meal from a photo"
+          title="Registra una comida con una foto"
           message={
             ready
-              ? 'Turn on photo recognition to let Gemini spot the foods on your plate. You confirm everything before it’s logged.'
-              : 'Snap your plate and Gemini names the foods and estimates portions; nutrition comes from the food database. Needs your own free Gemini API key.'
+              ? 'Activa el reconocimiento de fotos para que Gemini identifique los alimentos de tu plato. Tú lo confirmas todo antes de registrarlo.'
+              : 'Haz una foto a tu plato y Gemini identifica los alimentos y estima las raciones; los valores nutricionales salen de la base de datos de alimentos. Necesitas tu propia clave de API de Gemini (gratuita).'
           }
           action={
             ready ? (
-              <Button disabled={setPhoto.isPending} onClick={() => setPhoto.mutate(true, { onSuccess: () => toast.success('Photo recognition on 📸') })}>
-                Turn on photo recognition
+              <Button disabled={setPhoto.isPending} onClick={() => setPhoto.mutate(true, { onSuccess: () => toast.success('Reconocimiento de fotos activado 📸') })}>
+                Activar reconocimiento de fotos
               </Button>
             ) : (
-              <Button onClick={() => navigate('/settings#ai')}>Set up in Settings</Button>
+              <Button onClick={() => navigate('/settings#ai')}>Configurar en Ajustes</Button>
             )
           }
         />
@@ -125,9 +126,9 @@ export function PhotoTab({ meal: initialMeal, date }: { meal: MealType; date: st
   if (analyze.isPending) {
     return (
       <Card className="space-y-4">
-        {preview && <img src={preview} alt="Your meal" className="aspect-[4/3] w-full animate-shimmer rounded-2xl object-cover" />}
+        {preview && <img src={preview} alt="Tu comida" className="aspect-[4/3] w-full animate-shimmer rounded-2xl object-cover" />}
         <div className="flex items-center justify-center gap-3 py-2" role="status">
-          <Spinner /> <span className="text-[15px] text-muted">Recognising your meal… 🤖</span>
+          <Spinner /> <span className="text-[15px] text-muted">Reconociendo tu comida… 🤖</span>
         </div>
       </Card>
     )
@@ -140,10 +141,10 @@ export function PhotoTab({ meal: initialMeal, date }: { meal: MealType; date: st
         <ErrorState error={error} />
         <div className="grid grid-cols-2 gap-3">
           <Button variant="outline" onClick={reset}>
-            Try another photo
+            Probar con otra foto
           </Button>
           <Button variant="soft" onClick={() => navigate('/add?tab=search')}>
-            Search instead
+            Buscar en su lugar
           </Button>
         </div>
         {pickers}
@@ -156,10 +157,10 @@ export function PhotoTab({ meal: initialMeal, date }: { meal: MealType; date: st
     if (!result.isFood || items.length === 0) {
       return (
         <Card className="space-y-4">
-          {preview && <img src={preview} alt="Your photo" className="aspect-[4/3] w-full rounded-2xl object-cover" />}
-          <EmptyState emoji="🤔" title="I couldn’t spot any food" message={result.description || 'Try a closer, well-lit photo of the plate.'} />
+          {preview && <img src={preview} alt="Tu foto" className="aspect-[4/3] w-full rounded-2xl object-cover" />}
+          <EmptyState emoji="🤔" title="No he encontrado ningún alimento" message={result.description || 'Prueba con una foto más cercana y con buena luz del plato.'} />
           <Button className="w-full" onClick={reset}>
-            <RotateCcw className="size-4" /> Try another photo
+            <RotateCcw className="size-4" /> Probar con otra foto
           </Button>
         </Card>
       )
@@ -186,25 +187,25 @@ export function PhotoTab({ meal: initialMeal, date }: { meal: MealType; date: st
         <div className="grid size-18 place-items-center rounded-3xl bg-linear-to-br from-soft to-meal-lunch">
           <Emoji className="text-[36px]">📸</Emoji>
         </div>
-        <h2 className="mt-4 text-lg font-semibold tracking-tight">Snap your meal</h2>
+        <h2 className="mt-4 text-lg font-semibold tracking-tight">Haz una foto a tu comida</h2>
         <p className="mt-1 max-w-[32ch] text-sm text-muted">
-          Gemini names the foods and guesses portions. Nutrition always comes from the food database, and you confirm before anything is logged.
+          Gemini identifica los alimentos y calcula las raciones a ojo. Los valores nutricionales siempre salen de la base de datos de alimentos y tú confirmas antes de registrar nada.
         </p>
         <div className="mt-5 grid w-full max-w-xs gap-2">
           <Button size="lg" onClick={() => cameraRef.current?.click()}>
-            📷 Take photo
+            📷 Hacer foto
           </Button>
           <Button size="lg" variant="outline" onClick={() => libraryRef.current?.click()}>
-            <Images className="size-4" /> Choose from library
+            <Images className="size-4" /> Elegir de la galería
           </Button>
         </div>
       </Card>
       <Card className="space-y-1.5">
-        <Label htmlFor="photo-hint">Anything the photo won’t show? (optional)</Label>
-        <Input id="photo-hint" placeholder="e.g. no dressing, cooked in olive oil" maxLength={120} value={hint} onChange={(e) => setHint(e.target.value)} />
+        <Label htmlFor="photo-hint">¿Algo que no se vea en la foto? (opcional)</Label>
+        <Input id="photo-hint" placeholder="p. ej. sin aliñar, hecho con aceite de oliva" maxLength={120} value={hint} onChange={(e) => setHint(e.target.value)} />
       </Card>
       <p className="px-2 text-center text-[12px] leading-relaxed text-muted">
-        The photo is downscaled on your phone and sent to Google Gemini ({s.model}). Google’s free tier may use it to improve its products.
+        La foto se reduce en tu móvil y se envía a Google Gemini ({s.model}). En el plan gratuito, Google puede usarla para mejorar sus productos.
       </p>
       {pickers}
     </div>
@@ -242,28 +243,28 @@ function PhotoReview({
   async function submit() {
     try {
       await log.mutateAsync({ date, meal, photoId: result.photoId, items: confirmed })
-      toast.success(`${confirmed.length} item${confirmed.length > 1 ? 's' : ''} added to ${MEAL_LABELS[meal]} 📸`)
+      toast.success(`${confirmed.length} alimento${confirmed.length > 1 ? 's añadidos' : ' añadido'} ${TO_MEAL[meal]} 📸`)
       onLogged()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not log the meal')
+      toast.error(err instanceof Error ? err.message : 'No se ha podido registrar la comida')
     }
   }
 
   return (
     <div className="space-y-4">
       <Card className="flex gap-4 p-4">
-        {preview && <img src={preview} alt="Your meal" className="size-20 shrink-0 rounded-2xl object-cover" />}
+        {preview && <img src={preview} alt="Tu comida" className="size-20 shrink-0 rounded-2xl object-cover" />}
         <div className="min-w-0 flex-1">
-          <p className="text-[12.5px] font-medium text-muted">✨ Gemini saw</p>
-          <p className="text-[15px] leading-snug">{result.description || `${items.length} item${items.length > 1 ? 's' : ''}`}</p>
+          <p className="text-[12.5px] font-medium text-muted">✨ Gemini ha visto</p>
+          <p className="text-[15px] leading-snug">{result.description || `${items.length} alimento${items.length > 1 ? 's' : ''}`}</p>
           <button type="button" onClick={onRetake} className="mt-1 inline-flex min-h-9 items-center gap-1 text-[13px] font-medium text-accent">
-            <RotateCcw className="size-3.5" /> Retake
+            <RotateCcw className="size-3.5" /> Repetir
           </button>
         </div>
       </Card>
 
       <p className="rounded-2xl bg-meal-lunch px-4 py-3 text-[13px] leading-relaxed text-foreground/80">
-        ⚖️ Portions are visual estimates. Check each weight and match before logging.
+        ⚖️ Las raciones son estimaciones a ojo. Revisa cada peso y cada alimento antes de registrar.
       </p>
 
       <ul className="space-y-3">
@@ -280,7 +281,7 @@ function PhotoReview({
 
       {confirmed.length > 0 &&
         (totals.data ? (
-          <NutritionCard nutrition={totals.data} label={`Total · ${confirmed.length} item${confirmed.length > 1 ? 's' : ''}`} className="bg-soft" />
+          <NutritionCard nutrition={totals.data} label={`Total · ${confirmed.length} alimento${confirmed.length > 1 ? 's' : ''}`} className="bg-soft" />
         ) : (
           <Skeleton className="h-28 w-full rounded-2xl" />
         ))}
@@ -288,11 +289,11 @@ function PhotoReview({
       <MealPicker value={meal} onChange={setMeal} />
       {unmatched > 0 && (
         <p className="text-center text-[12.5px] text-muted">
-          {unmatched} item{unmatched > 1 ? 's' : ''} without a match won’t be logged — search for it or remove it.
+          {unmatched > 1 ? `${unmatched} alimentos sin coincidencia no se registrarán: búscalos o quítalos.` : '1 alimento sin coincidencia no se registrará: búscalo o quítalo.'}
         </p>
       )}
       <Button size="lg" className="w-full" disabled={confirmed.length === 0 || log.isPending} onClick={submit}>
-        Add {confirmed.length || ''} item{confirmed.length === 1 ? '' : 's'} to {MEAL_LABELS[meal]}
+        Añadir {confirmed.length || ''} alimento{confirmed.length === 1 ? '' : 's'} {TO_MEAL[meal]}
       </Button>
 
       <FoodPickerSheet
@@ -336,18 +337,18 @@ function PhotoItemCard({
             <Emoji className="text-[22px]">{foodEmoji(food?.name ?? item.name, food?.category)}</Emoji>
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[15.5px] font-semibold capitalize leading-snug">{item.name}</p>
+            <p className="text-[15.5px] font-semibold leading-snug">{capitalize(item.name)}</p>
             <p className={cn('text-[12px] font-medium', pct >= 70 ? 'text-sage' : pct >= 40 ? 'text-warning' : 'text-danger')}>
-              {pct >= 70 ? 'Confident' : pct >= 40 ? 'Not sure' : 'Low confidence'} · {pct}%
+              {pct >= 70 ? 'Bastante seguro' : pct >= 40 ? 'No muy seguro' : 'Poco seguro'} · {pct}%
             </p>
           </div>
-          <button type="button" aria-label={`Remove ${item.name}`} onClick={onRemove} className="grid size-11 place-items-center rounded-full text-muted active:bg-surface-2">
+          <button type="button" aria-label={`Quitar ${item.name}`} onClick={onRemove} className="grid size-11 place-items-center rounded-full text-muted active:bg-surface-2">
             <X className="size-4" />
           </button>
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor={`match-${item.id}`}>Food in the database</Label>
+          <Label htmlFor={`match-${item.id}`}>Alimento en la base de datos</Label>
           {item.matches.length > 0 ? (
             <select
               id={`match-${item.id}`}
@@ -355,29 +356,29 @@ function PhotoItemCard({
               onChange={(e) => (e.target.value === '__search' ? onSearch() : onChange({ foodId: e.target.value || null }))}
               className="h-12 w-full rounded-2xl border border-border bg-surface px-4 text-base outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
             >
-              {!item.foodId && <option value="">Choose a match…</option>}
+              {!item.foodId && <option value="">Elige una coincidencia…</option>}
               {item.matches.slice(0, 6).map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.name}
                   {m.brand ? ` (${m.brand})` : ''}
                 </option>
               ))}
-              <option value="__search">🔍 Search for another…</option>
+              <option value="__search">🔍 Buscar otro…</option>
             </select>
           ) : (
             <Button variant="soft" className="w-full" onClick={onSearch}>
-              🔍 No match — search the database
+              🔍 Sin coincidencia: busca en la base de datos
             </Button>
           )}
         </div>
 
         <div className="flex items-center gap-3">
           <div className="flex flex-1 items-center gap-1 rounded-2xl bg-surface-2 p-1">
-            <button type="button" aria-label="Less" onClick={() => setGrams(item.grams - 10)} className="grid size-11 place-items-center rounded-xl bg-surface shadow-sm">
+            <button type="button" aria-label={`Menos gramos de ${item.name}`} onClick={() => setGrams(item.grams - 10)} className="grid size-11 place-items-center rounded-xl bg-surface shadow-sm">
               <Minus className="size-4" />
             </button>
             <label className="flex flex-1 items-baseline justify-center gap-1">
-              <span className="sr-only">Grams of {item.name}</span>
+              <span className="sr-only">Gramos de {item.name}</span>
               <input
                 type="number"
                 inputMode="numeric"
@@ -388,7 +389,7 @@ function PhotoItemCard({
               />
               <span className="text-sm text-muted">g</span>
             </label>
-            <button type="button" aria-label="More" onClick={() => setGrams(item.grams + 10)} className="grid size-11 place-items-center rounded-xl bg-surface shadow-sm">
+            <button type="button" aria-label={`Más gramos de ${item.name}`} onClick={() => setGrams(item.grams + 10)} className="grid size-11 place-items-center rounded-xl bg-surface shadow-sm">
               <Plus className="size-4" />
             </button>
           </div>
@@ -426,21 +427,21 @@ function FoodPickerSheet({
   const [q, setQ] = useState('')
   const results = useFoodSearch(q)
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()} title="Find the right food" description={initialQuery ? `Gemini called it “${initialQuery}”` : undefined} className="h-[85dvh]">
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()} title="Busca el alimento correcto" description={initialQuery ? `Gemini lo ha llamado «${initialQuery}»` : undefined} className="h-[85dvh]">
       <div className="sticky top-0 z-10 bg-background pb-3">
-        <FoodSearchInput key={initialQuery} onDebouncedChange={setQ} placeholder="Search foods" />
+        <FoodSearchInput key={initialQuery} onDebouncedChange={setQ} placeholder="Buscar alimentos" />
       </div>
       {!q ? (
-        <p className="py-6 text-center text-sm text-muted">Type a food name 🔍</p>
+        <p className="py-6 text-center text-sm text-muted">Escribe el nombre de un alimento 🔍</p>
       ) : !results.data ? (
         <LoadingState />
       ) : results.data.length === 0 ? (
-        <EmptyState emoji="🔎" title="No matches" message="Try a simpler word, or create it as a custom food." />
+        <EmptyState emoji="🔎" title="Sin resultados" message="Prueba con una palabra más sencilla o créalo como alimento propio." />
       ) : (
         <ul className="divide-y divide-border/70">
           {results.data.map((f) => (
             <li key={f.id}>
-              <FoodListItem emoji={foodEmoji(f.name, f.category)} name={f.name} detail={[f.brand, 'per 100 g'].filter(Boolean).join(' · ')} calories={f.per100g.calories} onClick={() => onPick(f)} />
+              <FoodListItem emoji={foodEmoji(f.name, f.category)} name={f.name} detail={[f.brand, 'por 100 g'].filter(Boolean).join(' · ')} calories={f.per100g.calories} onClick={() => onPick(f)} />
             </li>
           ))}
         </ul>

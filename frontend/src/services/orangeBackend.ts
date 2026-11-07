@@ -161,6 +161,14 @@ const SOURCE: Record<B.FoodSourceType, FoodSource> = {
   recipe: 'recipe',
 }
 
+/** Spanish provenance labels (the stored citation stays in the backend data). */
+const ATTRIBUTION_ES: Partial<Record<B.FoodSourceType, string>> = {
+  usda_sr_legacy: 'Datos: USDA FoodData Central (SR Legacy)',
+  open_food_facts: 'Datos de Open Food Facts (licencia ODbL)',
+  user: 'Alimento creado por ti',
+  recipe: 'Receta',
+}
+
 function foodToUI(f: B.Food, isFavorite: boolean): Food {
   return {
     id: f.id,
@@ -171,7 +179,7 @@ function foodToUI(f: B.Food, isFavorite: boolean): Food {
     per100g: valuesToUI(f.nutrientsPer100g),
     servings: servingsToUI(f.servings),
     isFavorite,
-    attribution: f.source.attribution,
+    attribution: ATTRIBUTION_ES[f.source.type] ?? f.source.attribution,
     category: f.category,
   }
 }
@@ -308,12 +316,12 @@ function recToUI(r: B.Recommendation): Recommendation {
 }
 
 const SUGGESTED_PROMPTS = [
-  'What should I eat for dinner?',
-  'I need more protein.',
-  'Suggest something under 400 calories.',
-  'What can I make with eggs and spinach?',
-  'How can I increase my fiber?',
-  'What nutrients have I eaten less of this week?',
+  '¿Qué ceno hoy?',
+  'Necesito más proteína.',
+  'Sugiéreme algo de menos de 400 calorías.',
+  '¿Qué puedo hacer con huevos y espinacas?',
+  '¿Cómo puedo tomar más fibra?',
+  '¿Qué nutrientes me han faltado esta semana?',
 ]
 
 let seq = 0
@@ -323,11 +331,16 @@ const reply = (text: string, recs: Recommendation[] = [], followUps?: string[]):
   recommendations: recs,
   followUps,
 })
-const n0 = (n: number) => Math.round(n).toLocaleString()
+const n0 = (n: number) => Math.round(n).toLocaleString('es-ES')
+/** "Vitamina A" → "vitamina A" (lowercase only the first letter, keep "A", "B12"…). */
+const lowerFirst = (s: string) => s.charAt(0).toLocaleLowerCase('es-ES') + s.slice(1)
+const upperFirst = (s: string) => s.charAt(0).toLocaleUpperCase('es-ES') + s.slice(1)
+/** "Ideas para …" per meal. */
+const MEAL_IDEAS_FOR: Record<MealType, string> = { breakfast: 'el desayuno', lunch: 'la comida', dinner: 'la cena', snacks: 'picar' }
 
 async function weeklyNutrientGaps(date: ISODate): Promise<AssistantReply> {
   const [period, goals] = await Promise.all([B.getPeriodSummary(date, 7), B.getGoals(date)])
-  if (period.loggedDays === 0) return reply("You haven't logged any food in the past 7 days, so there's nothing to compare yet.")
+  if (period.loggedDays === 0) return reply('No has registrado nada en los últimos 7 días, así que aún no hay nada que comparar.')
   const low: { key: MicronutrientKey; pct: number }[] = []
   const unknown: string[] = []
   for (const k of MICRO_KEYS) {
@@ -342,34 +355,34 @@ async function weeklyNutrientGaps(date: ISODate): Promise<AssistantReply> {
     if (pct < AR_FRACTION * 100) low.push({ key: k, pct })
   }
   low.sort((a, b) => a.pct - b.pct)
-  const days = `${period.loggedDays} logged day${period.loggedDays > 1 ? 's' : ''}`
+  const days = `${period.loggedDays} día${period.loggedDays > 1 ? 's' : ''} registrado${period.loggedDays > 1 ? 's' : ''}`
   const parts = [
     low.length
-      ? `Over the last ${days}, these averaged well below the Spanish reference intakes (AESAN): ${low
+      ? `En ${period.loggedDays > 1 ? 'los últimos' : 'el último'} ${days}, estos nutrientes han quedado de media bastante por debajo de las ingestas de referencia españolas (AESAN): ${low
           .slice(0, 4)
           .map((l) => `${NUTRIENTS[l.key].label} (~${Math.round(l.pct)}%)`)
           .join(', ')}.`
-      : `Over the last ${days}, none of your well-documented nutrients averaged clearly below reference.`,
+      : `En ${period.loggedDays > 1 ? 'los últimos' : 'el último'} ${days}, ninguno de los nutrientes con datos suficientes ha quedado de media claramente por debajo de la referencia.`,
   ]
   if (unknown.length)
     parts.push(
-      `Data was too incomplete to judge ${unknown.slice(0, 5).join(', ')}${unknown.length > 5 ? ' and others' : ''} — that's missing data, not necessarily low intake.`,
+      `Faltan demasiados datos para valorar ${unknown.slice(0, 5).map(lowerFirst).join(', ')}${unknown.length > 5 ? ' y otros' : ''}: son datos que faltan, no necesariamente una ingesta baja.`,
     )
   const recs = low[0] ? (await B.recommend({ intent: 'micronutrient', nutrientId: low[0].key, date, limit: 3 })).map(recToUI) : []
-  if (recs.length) parts.push(`Some foods rich in ${NUTRIENTS[low[0]!.key].label.toLowerCase()}:`)
+  if (recs.length) parts.push(`Algunos alimentos ricos en ${lowerFirst(NUTRIENTS[low[0]!.key].label)}:`)
   return reply(parts.join(' '), recs)
 }
 
 const AI_ERROR_TEXT: Record<string, string> = {
-  RATE_LIMITED: 'Gemini’s free limit (5 requests per minute) was reached — wait a minute and try again',
-  OVERLOADED: 'Gemini is very busy right now — try again in a moment',
-  MODEL_NOT_FOUND: 'the selected Gemini model isn’t available for your key',
-  INVALID_KEY: 'your Gemini API key was rejected — check it in Settings',
-  PERMISSION_DENIED: 'Gemini refused the request — check your API key in Settings',
-  OFFLINE: 'you’re offline',
-  TIMEOUT: 'Gemini took too long to answer',
-  NETWORK: 'Gemini couldn’t be reached',
-  BLOCKED: 'Gemini declined to answer that',
+  RATE_LIMITED: 'se ha alcanzado el límite gratuito de Gemini (5 peticiones por minuto); espera un minuto y vuelve a intentarlo',
+  OVERLOADED: 'Gemini está muy saturado ahora mismo; inténtalo de nuevo en un momento',
+  MODEL_NOT_FOUND: 'el modelo de Gemini seleccionado no está disponible para tu clave',
+  INVALID_KEY: 'Gemini ha rechazado tu clave de API; revísala en Ajustes',
+  PERMISSION_DENIED: 'Gemini ha rechazado la petición; revisa tu clave de API en Ajustes',
+  OFFLINE: 'no tienes conexión',
+  TIMEOUT: 'Gemini ha tardado demasiado en responder',
+  NETWORK: 'no se ha podido conectar con Gemini',
+  BLOCKED: 'Gemini ha preferido no responder a eso',
 }
 
 /** Gemini first (when enabled), rule engine as fallback. */
@@ -381,16 +394,23 @@ async function ask(message: string, date: ISODate, history: ChatTurn[] = []): Pr
       return { ...reply(r.text, r.recommendations.map(recToUI), r.followUps.length ? r.followUps : undefined), source: 'ai' }
     } catch (e) {
       const code = e instanceof B.DataError ? ((e.details as { code?: string } | undefined)?.code ?? '') : ''
-      const why = AI_ERROR_TEXT[code] ?? 'the AI answer couldn’t be used'
+      const why = AI_ERROR_TEXT[code] ?? 'no se ha podido usar la respuesta de la IA'
       const fallback = await askRules(message, date)
-      return { ...fallback, source: 'rules', notice: `Answered by the built-in engine because ${why}.` }
+      return { ...fallback, source: 'rules', notice: `Ha respondido el motor integrado porque ${why}.` }
     }
   }
   return { ...(await askRules(message, date)), source: 'rules' }
 }
 
 async function askRules(message: string, date: ISODate): Promise<AssistantReply> {
-  if (/(less of|lowest|low in|lacking|short on).*(week|nutrient)|nutrients?.*(this week|week)/i.test(message)) return weeklyNutrientGaps(date)
+  // Weekly nutrient gaps (Spanish first; English kept). Accents are stripped before matching.
+  const plain = message.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  if (
+    /(me (han|ha) faltado|me faltan?|faltad[oa]s?|carencias?|deficit|(he|hemos) tomado (poco|menos)|bajos? en).*(semana|nutrientes?|vitaminas?|minerales?)/i.test(plain) ||
+    /(nutrientes?|vitaminas?|minerales?).*(esta semana|la semana|semanal|me (han|ha) faltado|me faltan?|faltan?)/i.test(plain) ||
+    /(less of|lowest|low in|lacking|short on).*(week|nutrient)|nutrients?.*(this week|week)/i.test(plain)
+  )
+    return weeklyNutrientGaps(date)
 
   const [res, summary] = await Promise.all([B.recommendFromText(message, { date, limit: 3 }), B.getDailySummary(date)])
   const recs = res.recommendations.map(recToUI)
@@ -399,14 +419,14 @@ async function askRules(message: string, date: ISODate): Promise<AssistantReply>
 
   if (confidence < 0.2 && recs.length === 0) {
     return reply(
-      "I'm a rule-based assistant, not a chatbot. I can suggest meals for breakfast, lunch, dinner or a snack, options under a calorie limit, high-protein or high-fiber ideas, dishes using ingredients you name, foods rich in a nutrient, or review which nutrients were low this week.",
+      'Soy un asistente basado en reglas, no un chatbot. Puedo sugerirte desayunos, comidas, cenas o snacks, opciones por debajo de un límite de calorías, ideas ricas en proteína o en fibra, platos con los ingredientes que me digas, alimentos ricos en un nutriente o repasar qué nutrientes te han faltado esta semana.',
       [],
       SUGGESTED_PROMPTS.slice(0, 3),
     )
   }
   if (recs.length === 0) {
     return reply(
-      'I couldn’t find suggestions that fit this request together with your diet, allergies and dislikes. Try relaxing a limit or naming different ingredients.',
+      'No he encontrado sugerencias que encajen con lo que pides y, a la vez, con tu dieta, tus alergias y lo que no te gusta. Prueba a relajar algún límite o a nombrar otros ingredientes.',
     )
   }
 
@@ -414,35 +434,35 @@ async function askRules(message: string, date: ISODate): Promise<AssistantReply>
   switch (request.intent) {
     case 'high_protein': {
       const r = remaining('protein')
-      lead = r !== undefined ? (r > 0 ? `You have ${n0(r)} g of protein left for today. These are high in protein:` : 'You’ve met today’s protein target. Still, these are protein-rich:') : 'These are high in protein:'
+      lead = r !== undefined ? (r > 0 ? `Hoy te quedan ${n0(r)} g de proteína. Estas opciones son ricas en proteína:` : 'Ya has cumplido tu objetivo de proteína de hoy. Aun así, estas opciones son ricas en proteína:') : 'Estas opciones son ricas en proteína:'
       break
     }
     case 'high_fiber': {
       const r = remaining('fiber')
-      lead = r !== undefined && r > 0 ? `You’re ${n0(r)} g short of today’s fiber target. Legumes, whole grains, vegetables and fruit help most:` : 'High-fiber ideas:'
+      lead = r !== undefined && r > 0 ? `Te faltan ${n0(r)} g para tu objetivo de fibra de hoy. Lo que más ayuda: legumbres, cereales integrales, verdura y fruta:` : 'Ideas ricas en fibra:'
       break
     }
     case 'low_calorie':
-      lead = request.maxCalories ? `Options under ${n0(request.maxCalories)} kcal:` : 'Lighter options:'
+      lead = request.maxCalories ? `Opciones de menos de ${n0(request.maxCalories)} kcal:` : 'Opciones más ligeras:'
       break
     case 'use_ingredients':
-      lead = res.matchedIngredients.length ? `Ideas using ${res.matchedIngredients.map((f) => f.name).join(', ')}:` : 'Ideas with what you have:'
+      lead = res.matchedIngredients.length ? `Ideas con ${res.matchedIngredients.map((f) => f.name).join(', ')}:` : 'Ideas con lo que tienes:'
       break
     case 'micronutrient':
-      lead = request.nutrientId ? `Foods rich in ${NUTRIENTS[request.nutrientId as MicronutrientKey]?.label ?? request.nutrientId}:` : 'Nutrient-rich ideas:'
+      lead = request.nutrientId ? `Alimentos ricos en ${NUTRIENTS[request.nutrientId as MicronutrientKey] ? lowerFirst(NUTRIENTS[request.nutrientId as MicronutrientKey].label) : request.nutrientId}:` : 'Ideas ricas en nutrientes:'
       break
     case 'fit_remaining': {
       const r = summary.remainingCalories
-      lead = r !== null ? `These fit the ~${n0(Math.max(r, 0))} kcal you have left today:` : 'These fit your remaining targets:'
+      lead = r !== null ? `Encajan con las ~${n0(Math.max(r, 0))} kcal que te quedan hoy:` : 'Encajan con lo que te queda para tus objetivos:'
       break
     }
     default: {
       const r = summary.remainingCalories
       const meal = request.mealType ? toUIMeal(request.mealType) : null
-      lead = `${meal ? `${meal[0]!.toUpperCase()}${meal.slice(1)} ideas` : 'Ideas'}${r !== null && r > 0 ? ` for the ~${n0(r)} kcal you have left` : ''}:`
+      lead = `${meal ? `Ideas para ${MEAL_IDEAS_FOR[meal]}` : 'Ideas'}${r !== null && r > 0 ? ` con las ~${n0(r)} kcal que te quedan` : ''}:`
     }
   }
-  if (res.unmatchedTerms.length) lead += ` (I couldn’t find “${res.unmatchedTerms.join('”, “')}” in the food database.)`
+  if (res.unmatchedTerms.length) lead += ` (No he encontrado «${res.unmatchedTerms.join('», «')}» en la base de datos de alimentos).`
   return reply(lead, recs)
 }
 
@@ -453,36 +473,36 @@ function insightsFor(day: DaySummary, isToday: boolean): DailyInsight[] {
     out.push({
       id: 'empty',
       kind: 'general',
-      title: isToday ? 'Nothing logged yet' : 'No entries this day',
+      title: isToday ? 'Aún no has registrado nada' : 'Sin registros este día',
       message: isToday
-        ? `Your targets today: ${n0(goals.calories)} kcal and at least ${n0(goals.protein)} g protein.`
-        : 'Entries you add for this day will show here.',
-      action: isToday ? { label: 'Meal ideas', prompt: 'What should I eat?' } : undefined,
+        ? `Tus objetivos de hoy: ${n0(goals.calories)} kcal y al menos ${n0(goals.protein)} g de proteína.`
+        : 'Lo que registres este día aparecerá aquí.',
+      action: isToday ? { label: 'Ideas de comidas', prompt: '¿Qué puedo comer?' } : undefined,
     })
     return out
   }
   const hour = new Date().getHours()
   if (goals.protein > 0 && remaining.protein >= 15) {
-    const next = !isToday ? 'Meal' : hour < 11 ? 'Lunch' : hour < 17 ? 'Dinner' : 'Snack'
+    const next = !isToday ? 'Ideas de comidas' : hour < 11 ? 'Ideas para comer' : hour < 17 ? 'Ideas para cenar' : 'Ideas para picar'
     out.push({
       id: 'protein',
       kind: 'protein',
-      title: 'Protein',
-      message: `You have ${n0(remaining.protein)} g of protein remaining${isToday ? ' today' : ''}.`,
-      action: { label: `${next} ideas`, prompt: 'I need more protein.' },
+      title: 'Proteínas',
+      message: `${isToday ? 'Hoy te quedan' : 'Te quedan'} ${n0(remaining.protein)} g de proteína.`,
+      action: { label: next, prompt: 'Necesito más proteína.' },
     })
   }
   if (goals.fiber > 0 && remaining.fiber >= 8 && (hour >= 14 || !isToday)) {
     out.push({
       id: 'fiber',
       kind: 'fiber',
-      title: 'Fiber',
-      message: `${n0(day.totals.fiber)} of ${n0(goals.fiber)} g fiber so far.`,
-      action: { label: 'Fiber ideas', prompt: 'How can I increase my fiber?' },
+      title: 'Fibra',
+      message: `Llevas ${n0(day.totals.fiber)} de ${n0(goals.fiber)} g de fibra.`,
+      action: { label: 'Ideas con fibra', prompt: '¿Cómo puedo tomar más fibra?' },
     })
   }
   if (goals.calories > 0 && remaining.calories < -goals.calories * 0.1) {
-    out.push({ id: 'over', kind: 'calories', title: 'Calories', message: `You're ${n0(-remaining.calories)} kcal over your target.` })
+    out.push({ id: 'over', kind: 'calories', title: 'Calorías', message: `Te has pasado ${n0(-remaining.calories)} kcal de tu objetivo.` })
   }
   return out
 }
@@ -531,7 +551,7 @@ function aiStatus(s: B.AiSettingsPublic): AiStatus {
 
 const aiErrorMessage = (e: unknown, action: string) => {
   const code = e instanceof B.DataError ? ((e.details as { code?: string } | undefined)?.code ?? '') : ''
-  return new Error(`${action}: ${AI_ERROR_TEXT[code] ?? (e instanceof Error ? e.message : 'something went wrong')}.`)
+  return new Error(`${action}: ${AI_ERROR_TEXT[code] ?? (e instanceof Error ? e.message : 'algo ha ido mal')}.`)
 }
 
 const photoService = initialized({
@@ -540,7 +560,7 @@ const photoService = initialized({
     try {
       r = await B.recognizeMealPhoto(image, { mealType: toBMeal(meal), ...(hint?.trim() ? { hint: hint.trim() } : {}) })
     } catch (e) {
-      throw aiErrorMessage(e, 'Couldn’t analyse the photo')
+      throw aiErrorMessage(e, 'No se ha podido analizar la foto')
     }
     return {
       isFood: r.isFood,
@@ -625,7 +645,7 @@ const aiService = initialized({
   },
   async test() {
     const r = await B.testAiConnection()
-    return r.ok ? { ok: true, message: `Connected to ${r.model}` } : { ok: false, message: AI_ERROR_TEXT[r.code] ?? r.message }
+    return r.ok ? { ok: true, message: `Conectado a ${r.model}` } : { ok: false, message: AI_ERROR_TEXT[r.code] ? upperFirst(AI_ERROR_TEXT[r.code]) : r.message }
   },
 })
 
@@ -675,7 +695,7 @@ export const orangeBackend: NutritionBackend = {
     },
     async preview(foodId: string, quantity: Quantity) {
       const f = await B.getFood(foodId)
-      if (!f) throw new Error('Food not found')
+      if (!f) throw new Error('Alimento no encontrado')
       return valuesToUI(B.nutrientsForQuantity(f, toBackendQuantity(quantity)).nutrients)
     },
   }),
@@ -689,12 +709,12 @@ export const orangeBackend: NutritionBackend = {
         case 'not_found':
           return { status: 'not_found' as const, barcode: r.barcode }
         case 'invalid':
-          return { status: 'error' as const, barcode: r.barcode, message: 'That doesn’t look like a valid EAN/UPC barcode. Check the digits.' }
+          return { status: 'error' as const, barcode: r.barcode, message: 'No parece un código de barras EAN/UPC válido. Revisa los dígitos.' }
         default:
           return {
             status: 'error' as const,
             barcode: r.barcode,
-            message: r.code === 'OFFLINE' ? 'You’re offline. Connect to look up new products, or add it manually.' : r.message,
+            message: r.code === 'OFFLINE' ? 'No tienes conexión. Conéctate para buscar productos nuevos o añádelo a mano.' : r.message,
           }
       }
     },
@@ -720,7 +740,7 @@ export const orangeBackend: NutritionBackend = {
     },
     async logRecommendation({ date, meal, recommendation }) {
       const r = recCache.get(recommendation.id)
-      if (!r) throw new Error('This suggestion has expired. Ask again to refresh it.')
+      if (!r) throw new Error('Esta sugerencia ha caducado. Vuelve a preguntar para actualizarla.')
       if (r.kind === 'recipe' && r.recipeId) return entryToUI(await B.logRecipe(r.recipeId, { date, mealType: toBMeal(meal) }))
       // Plates/foods: log each ingredient at the suggested grams (nutrition computed by the backend).
       const entries: B.MealEntry[] = []

@@ -18,7 +18,8 @@ export default defineConfig({
       manifest: {
         name: 'Orange Nutrition',
         short_name: 'Orange',
-        description: 'A calm, private, local-first nutrition tracker.',
+        description: 'Un diario de nutrición tranquilo, privado y que funciona sin conexión.',
+        lang: 'es',
         theme_color: '#FFF9F3',
         background_color: '#FFF9F3',
         display: 'standalone',

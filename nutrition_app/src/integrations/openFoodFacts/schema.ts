@@ -18,6 +18,8 @@ export const offNutrimentsSchema = z.record(z.string(), z.unknown());
 export const offProductSchema = z
   .object({
     code: z.string().optional(),
+    product_name_es: z.string().optional().nullable(),
+    generic_name_es: z.string().optional().nullable(),
     product_name: z.string().optional().nullable(),
     product_name_en: z.string().optional().nullable(),
     generic_name: z.string().optional().nullable(),

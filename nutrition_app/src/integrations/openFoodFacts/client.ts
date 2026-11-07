@@ -41,6 +41,8 @@ export interface OffClientOptions {
 
 const FIELDS = [
   'code',
+  'product_name_es',
+  'generic_name_es',
   'product_name',
   'product_name_en',
   'generic_name',
@@ -98,7 +100,7 @@ export class OpenFoodFactsClient {
 
   private async doFetch(barcode: string): Promise<OffFetchResult> {
     if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new OpenFoodFactsError('OFFLINE', 'Device is offline');
-    const url = `${this.baseUrl}/api/v2/product/${encodeURIComponent(barcode)}.json?fields=${FIELDS}&app_name=${encodeURIComponent(APP_NAME)}&app_version=${APP_VERSION}`;
+    const url = `${this.baseUrl}/api/v2/product/${encodeURIComponent(barcode)}.json?fields=${FIELDS}&lc=es&app_name=${encodeURIComponent(APP_NAME)}&app_version=${APP_VERSION}`;
     const headers: Record<string, string> = { Accept: 'application/json' };
     if (!isBrowser()) headers['User-Agent'] = `${APP_NAME}/${APP_VERSION} (${APP_CONTACT})`;
 

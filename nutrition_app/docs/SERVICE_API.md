@@ -13,6 +13,10 @@ await addMealEntry({ date: today(), mealType: 'breakfast', foodId: results[0].fo
 const summary = await getDailySummary();   // totals, per meal, goal progress, remaining calories
 ```
 
+## Language
+
+The app is Spanish (Spain): the USDA starter catalog has Spanish names, Spanish-only search aliases and Spanish serving labels (`scripts/usda-selection.ts`, `scripts/servingLabelsEs.ts`; `SEED_VERSION` 2 refreshes installed catalogs). User-facing texts produced by the backend (recommendation explanations, profile warnings/sources, AI privacy notice, common errors) are Spanish. `parseIntent` understands Spanish and English phrasing. Open Food Facts lookups prefer `product_name_es` (`lc=es`). Gemini is asked for Spanish food names (photos) and Spanish replies. `source.originalName` keeps the USDA English description for attribution.
+
 ## Key rules the UI must respect
 
 | Concept | Rule |

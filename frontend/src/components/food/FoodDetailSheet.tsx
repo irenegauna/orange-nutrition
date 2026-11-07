@@ -2,7 +2,7 @@ import { Star, Trash } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import type { Food, LogEntry, MealType, Quantity } from '@/core/types'
-import { MEAL_LABELS } from '@/lib/format'
+import { MEAL_LABELS, TO_MEAL } from '@/lib/format'
 import { useAddEntry, useDeleteEntry, useFood, useFoodPreview, useSetFavorite, useUpdateEntry } from '@/services/queries'
 import { Sheet } from '../ui/sheet'
 import { Button } from '../ui/button'
@@ -58,15 +58,15 @@ export function FoodDetailSheet(props: Props) {
     try {
       if (props.mode === 'add' && props.food) {
         const e = await add.mutateAsync({ date: props.date, meal, foodId: props.food.id, quantity })
-        toast.success(`Added to ${MEAL_LABELS[meal]}`)
+        toast.success(`Añadido ${TO_MEAL[meal]}`)
         props.onLogged?.(e)
       } else if (entry) {
         await update.mutateAsync({ id: entry.id, meal, quantity })
-        toast.success('Entry updated')
+        toast.success('Registro actualizado')
       }
       props.onClose()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not save')
+      toast.error(err instanceof Error ? err.message : 'No se ha podido guardar')
     }
   }
 
@@ -74,11 +74,11 @@ export function FoodDetailSheet(props: Props) {
     if (!entry) return
     try {
       await del.mutateAsync(entry.id)
-      toast.success('Entry deleted')
+      toast.success('Registro eliminado')
       setConfirmDelete(false)
       props.onClose()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not delete')
+      toast.error(err instanceof Error ? err.message : 'No se ha podido eliminar')
     }
   }
 
@@ -92,12 +92,12 @@ export function FoodDetailSheet(props: Props) {
         footer={
           <div className="flex gap-3">
             {entry && (
-              <Button variant="danger" size="icon" aria-label="Delete entry" onClick={() => setConfirmDelete(true)}>
+              <Button variant="danger" size="icon" aria-label="Eliminar registro" onClick={() => setConfirmDelete(true)}>
                 <Trash className="size-[18px]" />
               </Button>
             )}
             <Button className="flex-1" size="lg" disabled={busy || !quantity || quantity.amount <= 0} onClick={save}>
-              {entry ? 'Save changes' : `Add to ${MEAL_LABELS[meal]}`}
+              {entry ? 'Guardar cambios' : `Añadir ${TO_MEAL[meal]}`}
             </Button>
           </div>
         }
@@ -109,16 +109,16 @@ export function FoodDetailSheet(props: Props) {
             <Skeleton className="h-[104px] w-full rounded-2xl" />
           )}
           {entry && !entry.foodId && (
-            <p className="text-[13px] text-muted">Nutrition updates after you save a new amount.</p>
+            <p className="text-[13px] text-muted">Los valores nutricionales se actualizan al guardar la nueva cantidad.</p>
           )}
           {quantity && (
-            <section aria-label="Amount">
-              <h3 className="mb-2 text-[13px] font-medium text-muted">Amount</h3>
+            <section aria-label="Cantidad">
+              <h3 className="mb-2 text-[13px] font-medium text-muted">Cantidad</h3>
               <QuantitySelector value={quantity} onChange={setQuantity} servings={servings} />
             </section>
           )}
-          <section aria-label="Meal">
-            <h3 className="mb-2 text-[13px] font-medium text-muted">Meal</h3>
+          <section aria-label="Momento del día">
+            <h3 className="mb-2 text-[13px] font-medium text-muted">Momento del día</h3>
             <MealPicker value={meal} onChange={setMeal} />
           </section>
           {food && (
@@ -130,7 +130,7 @@ export function FoodDetailSheet(props: Props) {
               aria-pressed={!!food.isFavorite}
             >
               <Star className={food.isFavorite ? 'size-4 fill-carbs text-carbs' : 'size-4'} />
-              {food.isFavorite ? 'Favorited' : 'Add to favorites'}
+              {food.isFavorite ? 'En favoritos' : 'Añadir a favoritos'}
             </Button>
           )}
         </div>
@@ -138,9 +138,9 @@ export function FoodDetailSheet(props: Props) {
       <ConfirmDialog
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
-        title="Delete this entry?"
-        description={`${title} will be removed from ${entry ? MEAL_LABELS[entry.meal] : 'your diary'}.`}
-        confirmLabel="Delete"
+        title="¿Eliminar este registro?"
+        description={`${title} se eliminará de ${entry ? MEAL_LABELS[entry.meal] : 'tu diario'}.`}
+        confirmLabel="Eliminar"
         destructive
         busy={del.isPending}
         onConfirm={remove}

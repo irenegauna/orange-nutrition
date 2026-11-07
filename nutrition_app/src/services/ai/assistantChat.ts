@@ -52,7 +52,7 @@ const SYSTEM = `You are the friendly nutrition assistant inside "Orange Nutritio
 You receive JSON context with the user's goals, what they ate today, recent averages and a catalog of foods they can eat.
 
 How to answer:
-- Reply conversationally in the same language as the user's message, in at most ~120 words. Be warm, concrete and practical.
+- Reply conversationally in the same language as the user's message (the app is in Spanish, so default to Spanish from Spain), in at most ~120 words. Be warm, concrete and practical.
 - When talking about the user's own intake, use ONLY the numbers in the context. If coverage for a nutrient is below 0.8, say the data is incomplete instead of calling it low.
 - You may share general, well-established nutrition knowledge. Do not invent precise nutrient amounts for specific foods; the app calculates those.
 - Never diagnose deficiencies or medical conditions and never give medical advice. Suggest a professional for medical questions.
@@ -63,7 +63,7 @@ Meal suggestions ("suggestions"):
 - Use ONLY foods from "catalog", by exact id. grams = weight of that food in the listed form (raw/dry/cooked).
 - Fit the calorie budget and remaining targets. Give each a short name and a reason (max 20 words). Never state calories in "reason".
 
-Also return 0-3 short follow-up questions the user might tap next ("followUps").`;
+Also return 0-3 short follow-up questions the user might tap next ("followUps"), in the same language as your reply. Write suggestion names and reasons in that language too.`;
 
 const SCHEMA: GeminiSchema = {
   type: 'OBJECT',
@@ -114,7 +114,7 @@ const MAX_HISTORY_TURNS = 8;
  */
 export async function chatWithAssistant(input: AssistantChatInput): Promise<AssistantChatResult> {
   const message = input.message.trim();
-  if (!message) throw new DataError('VALIDATION', 'Message is empty');
+  if (!message) throw new DataError('VALIDATION', 'El mensaje está vacío');
   const client = await getAiClient('suggestions');
   const now = input.now ?? new Date();
   const date = input.date ?? today();
@@ -191,7 +191,7 @@ export async function chatWithAssistant(input: AssistantChatInput): Promise<Assi
     throw e;
   }
   const parsed = responseSchema.safeParse(raw);
-  if (!parsed.success) throw new DataError('UNAVAILABLE', 'The AI answer could not be understood', { code: 'INVALID_RESPONSE' });
+  if (!parsed.success) throw new DataError('UNAVAILABLE', 'No se ha podido entender la respuesta de la IA', { code: 'INVALID_RESPONSE' });
 
   const recommendations: Recommendation[] = [];
   const rejected: AssistantChatResult['rejected'] = [];

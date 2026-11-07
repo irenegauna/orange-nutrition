@@ -13,14 +13,15 @@ import { snapshotOf } from '../meals/snapshot';
 import { getAiClient, getAiSettings } from './settings';
 import { MAX_PHOTO_BYTES, prepareImage, savePhoto, type PreparedImage } from './photos';
 
-const SYSTEM = `You identify foods in meal photos for a personal nutrition tracking app.
+const SYSTEM = `You identify foods in meal photos for a personal nutrition tracking app used in Spain. The app's food database is in Spanish (Spain).
 For each distinct food or drink visible:
-- "name": a short generic English name as it would appear in a food composition database, including the preparation when visible (e.g. "white rice, cooked", "chicken breast, grilled", "banana", "whole milk").
-- "searchTerms": 1-3 simpler alternatives (e.g. ["rice", "white rice"]).
+- "name": a short generic SPANISH (Spain) name as it would appear in a food composition database, including the preparation when visible (e.g. "arroz blanco, cocido", "pechuga de pollo, a la plancha", "plátano", "leche entera", "patata, asada").
+- "searchTerms": 1-3 simpler Spanish alternatives (e.g. ["arroz", "arroz blanco"]).
+- "description": one short sentence in Spanish describing the meal.
 - "estimatedGrams": your best visual estimate of the edible weight in grams, using cues like plate size (~26 cm), cutlery and hands.
 - "confidence": 0 to 1.
-- "preparation": raw, cooked, grilled, fried, baked, boiled, roasted, steamed, dried, or unknown.
-For a mixed dish that cannot be separated (e.g. lasagna), list it as one item and add its main components as searchTerms.
+- "preparation": raw, cooked, grilled, fried, baked, boiled, roasted, steamed, dried, or unknown (keep these English keywords).
+For a mixed dish that cannot be separated (e.g. lasaña), list it as one item and add its main components as Spanish searchTerms.
 NEVER output calories or nutrient values. If the photo contains no food, set "isFood" to false and return an empty "items" array.`;
 
 const SCHEMA: GeminiSchema = {
@@ -67,13 +68,21 @@ const responseSchema = z.object({
     }).slice(0, 20)),
 });
 
-const COOKED = /\b(cooked|grilled|fried|baked|boiled|roasted|steamed|scrambled|broiled|sauteed|stewed)\b/;
+const COOKED = /\b(cooked|grilled|fried|baked|boiled|roasted|steamed|scrambled|broiled|sauteed|stewed)\b|(cocid|cocinad|plancha|frit|hornead|al horno|hervid|asad|al vapor|revuelt|guisad|saltead|estofad)/;
+const RAW = /\b(raw|crud[oa]s?)\b/;
+const DRY = /\b(dry|dried|sec[oa]s?|deshidratad[oa]s?)\b/;
 
 /** Words that describe a food but never identify it (a match on these alone is meaningless). */
 const GENERIC = new Set([
   'whole', 'raw', 'cooked', 'fresh', 'sliced', 'slice', 'dried', 'dry', 'roasted', 'roast', 'grilled', 'boiled', 'fried', 'baked', 'steamed',
   'plain', 'mixed', 'mix', 'red', 'green', 'yellow', 'white', 'black', 'large', 'small', 'medium', 'chopped', 'diced', 'piece', 'pieces',
   'homemade', 'organic', 'low', 'fat', 'free', 'style', 'serving', 'portion', 'bowl', 'plate', 'cup', 'sweet', 'hot', 'cold',
+  // Spanish (accents removed by tokenize)
+  'entero', 'entera', 'enteros', 'enteras', 'cocido', 'cocida', 'cocinado', 'cocinada', 'fresco', 'fresca', 'rodaja', 'rodajas', 'loncha', 'lonchas',
+  'seco', 'seca', 'asado', 'asada', 'plancha', 'hervido', 'hervida', 'frito', 'frita', 'horneado', 'horneada', 'horno', 'vapor', 'natural', 'mezcla',
+  'rojo', 'roja', 'verde', 'amarillo', 'amarilla', 'blanco', 'blanca', 'negro', 'negra', 'grande', 'pequeno', 'pequena', 'mediano', 'mediana',
+  'picado', 'picada', 'troceado', 'trozo', 'trozos', 'casero', 'casera', 'ecologico', 'bajo', 'baja', 'grasa', 'estilo', 'racion', 'porcion',
+  'bol', 'plato', 'taza', 'dulce', 'caliente', 'frio', 'fria',
 ]);
 
 /** Ranks local foods for one detected item. Prefers forms matching the visible preparation. */
@@ -85,8 +94,8 @@ export async function matchDetectedFood(d: DetectedFood, limit = 5): Promise<Foo
       const prep = `${d.preparation ?? ''} ${d.name}`.toLowerCase();
       let score = r.score - qi * 400; // matches on the primary name always beat fallback terms
       if (COOKED.test(prep)) score += r.food.form === 'cooked' ? 40 : r.food.form === 'raw' || r.food.form === 'dry' ? -60 : 0;
-      else if (/\braw\b/.test(prep)) score += r.food.form === 'raw' || r.food.form === 'ready' ? 20 : -20;
-      else if (r.food.form === 'dry' && !/\bdr(y|ied)\b/.test(prep)) score -= 60;
+      else if (RAW.test(prep)) score += r.food.form === 'raw' || r.food.form === 'ready' ? 20 : -20;
+      else if (r.food.form === 'dry' && !DRY.test(prep)) score -= 60;
       const prev = merged.get(r.food.id);
       if (!prev || prev.score < score) merged.set(r.food.id, { ...r, score });
     }
@@ -123,8 +132,8 @@ export async function recognizeMealPhoto(image: Blob | ArrayBuffer | PreparedIma
   const client = await getAiClient('photo');
   const settings = await getAiSettings();
   const prepared = 'data' in (image as PreparedImage) && (image as PreparedImage).data instanceof ArrayBuffer ? (image as PreparedImage) : await prepareImage(image as Blob | ArrayBuffer);
-  if (prepared.data.byteLength === 0) throw new DataError('VALIDATION', 'Empty image');
-  if (prepared.data.byteLength > MAX_PHOTO_BYTES) throw new DataError('VALIDATION', 'Photo is too large');
+  if (prepared.data.byteLength === 0) throw new DataError('VALIDATION', 'La imagen está vacía');
+  if (prepared.data.byteLength > MAX_PHOTO_BYTES) throw new DataError('VALIDATION', 'La foto es demasiado grande');
 
   let raw: unknown;
   try {
@@ -142,7 +151,7 @@ export async function recognizeMealPhoto(image: Blob | ArrayBuffer | PreparedIma
     throw e;
   }
   const parsed = responseSchema.safeParse(raw);
-  if (!parsed.success) throw new DataError('UNAVAILABLE', 'The AI answer could not be understood', { code: 'INVALID_RESPONSE' });
+  if (!parsed.success) throw new DataError('UNAVAILABLE', 'No se ha podido entender la respuesta de la IA', { code: 'INVALID_RESPONSE' });
 
   const items: PhotoRecognitionItem[] = [];
   for (const it of parsed.data.isFood ? parsed.data.items : []) {
@@ -193,14 +202,14 @@ export interface LogPhotoMealInput {
 /** Logs the user-confirmed items atomically (origin 'photo_ai', photo attached). */
 export async function logPhotoMeal(input: LogPhotoMealInput): Promise<MealEntry[]> {
   assertLocalDate(input.date);
-  if (input.items.length === 0) throw new DataError('VALIDATION', 'Select at least one food');
+  if (input.items.length === 0) throw new DataError('VALIDATION', 'Elige al menos un alimento');
   const foods = await foodRepository.getMany(input.items.map((i) => i.foodId));
   const base = Date.now();
   const entries: MealEntry[] = input.items.map((item, i) => {
     const food = foods.get(item.foodId);
-    if (!food) throw new DataError('NOT_FOUND', `Food ${item.foodId} not found`);
+    if (!food) throw new DataError('NOT_FOUND', `No se ha encontrado el alimento ${item.foodId}`);
     const quantity: Quantity = item.quantity ?? { amount: item.grams ?? 0, unit: 'g' };
-    if (!(quantity.amount > 0)) throw new DataError('VALIDATION', `Quantity for ${food.name} must be > 0`);
+    if (!(quantity.amount > 0)) throw new DataError('VALIDATION', `La cantidad de ${food.name} debe ser mayor que 0`);
     const snapshot = snapshotOf(food);
     let r: { grams: number; nutrients: MealEntry['nutrients'] };
     try {
@@ -228,6 +237,6 @@ export async function logPhotoMeal(input: LogPhotoMealInput): Promise<MealEntry[
     };
   });
   const db = getDb();
-  if (input.photoId && !(await db.photos.get(input.photoId))) throw new DataError('NOT_FOUND', 'Photo not found');
+  if (input.photoId && !(await db.photos.get(input.photoId))) throw new DataError('NOT_FOUND', 'No se ha encontrado la foto');
   return guard('Log photo meal', () => db.transaction('rw', db.mealEntries, () => mealEntryRepository.bulkAdd(entries)));
 }

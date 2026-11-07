@@ -34,17 +34,17 @@ export function RecommendationCard({
           )}
         </div>
         <p className="mt-0.5 text-[12.5px] text-muted tabular">
-          <b className="font-medium text-protein">P</b> {grams(n.protein)} g · <b className="font-medium text-carbs">C</b> {grams(n.carbs)} g ·{' '}
-          <b className="font-medium text-fat">F</b> {grams(n.fat)} g · <b className="font-medium text-fiber">Fib</b> {grams(n.fiber)} g
+          <b className="font-medium text-protein">P</b> {grams(n.protein)} g · <b className="font-medium text-carbs">H</b> {grams(n.carbs)} g ·{' '}
+          <b className="font-medium text-fat">G</b> {grams(n.fat)} g · <b className="font-medium text-fiber">Fib</b> {grams(n.fiber)} g
         </p>
         <p className="mt-3 rounded-2xl bg-sage-soft px-3 py-2 text-[12.5px] leading-snug text-sage">{rec.explanation}</p>
       </button>
       <div className="mt-3 flex gap-2">
         <Button size="sm" variant="outline" className="flex-1" onClick={onOpen}>
-          Recipe
+          Receta
         </Button>
         <Button size="sm" className="flex-1" onClick={onAdd}>
-          <Plus className="size-4" /> Add to diary
+          <Plus className="size-4" /> Añadir al diario
         </Button>
       </div>
     </article>

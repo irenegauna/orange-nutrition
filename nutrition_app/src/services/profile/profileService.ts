@@ -46,7 +46,7 @@ export async function getProfileWithTargets(): Promise<ProfileWithTargets | null
  */
 export async function saveProfile(input: UserProfileInput): Promise<ProfileWithTargets> {
   const parsed = userProfileInputSchema.safeParse(input);
-  if (!parsed.success) throw new DataError('VALIDATION', 'Invalid profile', formatZodIssues(parsed.error));
+  if (!parsed.success) throw new DataError('VALIDATION', 'Perfil no válido', formatZodIssues(parsed.error));
   const v = parsed.data;
   const date = today();
   const profile: UserProfile = {

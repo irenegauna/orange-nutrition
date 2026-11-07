@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 export function FoodSearchInput({
   onDebouncedChange,
   autoFocus,
-  placeholder = 'Search foods',
+  placeholder = 'Buscar alimentos',
 }: {
   onDebouncedChange: (q: string) => void
   autoFocus?: boolean
@@ -36,7 +36,7 @@ export function FoodSearchInput({
       {value && (
         <button
           type="button"
-          aria-label="Clear search"
+          aria-label="Borrar búsqueda"
           onClick={() => setValue('')}
           className="absolute right-1 top-1/2 grid size-11 -translate-y-1/2 place-items-center text-muted"
         >

@@ -15,7 +15,7 @@ import { ConfirmDialog } from '@/components/ui/dialog'
 import { FieldError, Input, Label } from '@/components/ui/input'
 import { Sheet } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
-import { MEAL_LABELS, quantityLabel } from '@/lib/format'
+import { TO_MEAL, quantityLabel } from '@/lib/format'
 import { useDeleteRecipe, useFood, useFoodSearch, useLogRecipe, useRecipeCalculation, useRecipes, useSaveRecipe } from '@/services/queries'
 import { foodDetail } from './SearchTab'
 import { foodEmoji } from '@/lib/emoji'
@@ -32,7 +32,7 @@ export function RecipesTab({ meal, date }: { meal: MealType; date: string }) {
   return (
     <div className="space-y-3">
       <Button size="lg" variant="soft" className="w-full" onClick={() => setEditing({ name: '', servings: 1, ingredients: [] })}>
-        <Plus className="size-5" /> New recipe
+        <Plus className="size-5" /> Nueva receta
       </Button>
       {recipes.isError ? (
         <ErrorState error={recipes.error} onRetry={() => recipes.refetch()} />
@@ -41,8 +41,8 @@ export function RecipesTab({ meal, date }: { meal: MealType; date: string }) {
       ) : recipes.data.length === 0 ? (
         <EmptyState
           emoji="👩‍🍳"
-          title="No recipes yet"
-          message="Build a recipe once from its ingredients, then log a serving in one tap."
+          title="Aún no tienes recetas"
+          message="Crea una receta una vez a partir de sus ingredientes y registra una ración con un toque."
         />
       ) : (
         recipes.data.map((r) => (
@@ -59,15 +59,15 @@ export function RecipesTab({ meal, date }: { meal: MealType; date: string }) {
       <ConfirmDialog
         open={!!deleting}
         onOpenChange={(o) => !o && setDeleting(null)}
-        title="Delete recipe?"
-        description={`“${deleting?.name}” will be removed. Entries you already logged stay in your diary.`}
-        confirmLabel="Delete"
+        title="¿Eliminar la receta?"
+        description={`Se eliminará «${deleting?.name}». Lo que ya hayas registrado seguirá en tu diario.`}
+        confirmLabel="Eliminar"
         destructive
         busy={del.isPending}
         onConfirm={async () => {
           if (!deleting) return
           await del.mutateAsync(deleting.id)
-          toast.success('Recipe deleted')
+          toast.success('Receta eliminada')
           setDeleting(null)
         }}
       />
@@ -89,19 +89,19 @@ function RecipeBuilder({ initial, onDone }: { initial: RecipeDraft; onDone: () =
 
   async function onSave() {
     if (!draft.name.trim()) {
-      setNameError('Give your recipe a name')
+      setNameError('Ponle un nombre a tu receta')
       return
     }
     if (!draft.ingredients.length) {
-      toast.error('Add at least one ingredient')
+      toast.error('Añade al menos un ingrediente')
       return
     }
     try {
       await save.mutateAsync({ ...draft, name: draft.name.trim() })
-      toast.success('Recipe saved')
+      toast.success('Receta guardada')
       onDone()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not save recipe')
+      toast.error(err instanceof Error ? err.message : 'No se ha podido guardar la receta')
     }
   }
 
@@ -109,10 +109,10 @@ function RecipeBuilder({ initial, onDone }: { initial: RecipeDraft; onDone: () =
     <div className="space-y-4">
       <Card className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="recipe-name">Recipe name</Label>
+          <Label htmlFor="recipe-name">Nombre de la receta</Label>
           <Input
             id="recipe-name"
-            placeholder="e.g. Sunday lentil soup"
+            placeholder="p. ej. Lentejas del domingo"
             value={draft.name}
             aria-invalid={!!nameError}
             onChange={(e) => {
@@ -123,12 +123,12 @@ function RecipeBuilder({ initial, onDone }: { initial: RecipeDraft; onDone: () =
           <FieldError>{nameError}</FieldError>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-[15px] font-medium">Servings</span>
+          <span className="text-[15px] font-medium">Raciones</span>
           <div className="flex items-center gap-2">
             <Button
               size="icon"
               variant="outline"
-              aria-label="Fewer servings"
+              aria-label="Menos raciones"
               disabled={draft.servings <= 1}
               onClick={() => setDraft({ ...draft, servings: draft.servings - 1 })}
             >
@@ -137,7 +137,7 @@ function RecipeBuilder({ initial, onDone }: { initial: RecipeDraft; onDone: () =
             <span className="w-8 text-center tabular text-lg font-semibold" aria-live="polite">
               {draft.servings}
             </span>
-            <Button size="icon" variant="outline" aria-label="More servings" onClick={() => setDraft({ ...draft, servings: draft.servings + 1 })}>
+            <Button size="icon" variant="outline" aria-label="Más raciones" onClick={() => setDraft({ ...draft, servings: draft.servings + 1 })}>
               <Plus className="size-4" />
             </Button>
           </div>
@@ -146,24 +146,24 @@ function RecipeBuilder({ initial, onDone }: { initial: RecipeDraft; onDone: () =
 
       <Card className="p-0">
         <div className="flex items-center justify-between px-5 pb-1 pt-4">
-          <h3 className="text-[15px] font-semibold">Ingredients</h3>
+          <h3 className="text-[15px] font-semibold">Ingredientes</h3>
           <Button size="sm" variant="soft" onClick={() => setPicking(true)}>
-            <Plus className="size-4" /> Add
+            <Plus className="size-4" /> Añadir
           </Button>
         </div>
         {draft.ingredients.length === 0 ? (
-          <p className="px-5 pb-5 pt-2 text-sm text-muted">Search and add each ingredient with its amount.</p>
+          <p className="px-5 pb-5 pt-2 text-sm text-muted">Busca y añade cada ingrediente con su cantidad.</p>
         ) : (
           <ul className="divide-y divide-border/70 px-5 pb-2">
             {draft.ingredients.map((ing, i) => (
               <li key={`${ing.foodId}-${i}`} className="flex items-center gap-2 py-2">
                 <button type="button" className="min-h-11 min-w-0 flex-1 text-left" onClick={() => setEditingIdx(i)}>
                   <span className="block truncate text-[15px] font-medium">{ing.foodName}</span>
-                  <span className="block text-[12.5px] text-muted">{quantityLabel(ing.quantity)} · tap to edit</span>
+                  <span className="block text-[12.5px] text-muted">{quantityLabel(ing.quantity)} · toca para editar</span>
                 </button>
                 <button
                   type="button"
-                  aria-label={`Remove ${ing.foodName}`}
+                  aria-label={`Quitar ${ing.foodName}`}
                   onClick={() => removeIngredient(i)}
                   className="grid size-11 place-items-center rounded-full text-muted active:bg-surface-2"
                 >
@@ -178,8 +178,8 @@ function RecipeBuilder({ initial, onDone }: { initial: RecipeDraft; onDone: () =
       {draft.ingredients.length > 0 &&
         (calc.data ? (
           <div className="grid gap-3 sm:grid-cols-2">
-            <NutritionCard nutrition={calc.data.perServing} label="Per serving" className="bg-soft" />
-            <NutritionCard nutrition={calc.data.total} label={`Whole recipe · ${Math.round(calc.data.totalGrams)} g`} />
+            <NutritionCard nutrition={calc.data.perServing} label="Por ración" className="bg-soft" />
+            <NutritionCard nutrition={calc.data.total} label={`Receta completa · ${Math.round(calc.data.totalGrams)} g`} />
           </div>
         ) : calc.isError ? (
           <ErrorState error={calc.error} />
@@ -189,10 +189,10 @@ function RecipeBuilder({ initial, onDone }: { initial: RecipeDraft; onDone: () =
 
       <div className="grid grid-cols-2 gap-3">
         <Button variant="outline" size="lg" onClick={onDone}>
-          Cancel
+          Cancelar
         </Button>
         <Button size="lg" onClick={onSave} disabled={save.isPending}>
-          Save recipe
+          Guardar receta
         </Button>
       </div>
 
@@ -221,18 +221,18 @@ function IngredientPicker({ open, onClose, onPick }: { open: boolean; onClose: (
   const [q, setQ] = useState('')
   const results = useFoodSearch(q)
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()} title="Add ingredient" className="h-[85dvh]">
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()} title="Añadir ingrediente" className="h-[85dvh]">
       <div className="sticky top-0 z-10 bg-background pb-3">
         <FoodSearchInput onDebouncedChange={setQ} />
       </div>
       {!q ? (
-        <p className="py-6 text-center text-sm text-muted">Search for an ingredient</p>
+        <p className="py-6 text-center text-sm text-muted">Busca un ingrediente</p>
       ) : results.isError ? (
         <ErrorState error={results.error} />
       ) : !results.data ? (
         <LoadingState />
       ) : results.data.length === 0 ? (
-        <EmptyState title="No matches" message="Create it as a custom food first, then add it here." />
+        <EmptyState title="Sin resultados" message="Créalo primero como alimento propio y luego añádelo aquí." />
       ) : (
         <ul className="divide-y divide-border/70">
           {results.data.map((f) => (
@@ -261,10 +261,10 @@ function IngredientEditor({
       open={!!ingredient}
       onOpenChange={(o) => !o && onClose()}
       title={ingredient?.foodName ?? ''}
-      description="Ingredient amount"
+      description="Cantidad del ingrediente"
       footer={
         <Button className="w-full" size="lg" onClick={onClose}>
-          Done
+          Hecho
         </Button>
       }
     >
@@ -287,7 +287,7 @@ function LogRecipeSheet({ recipe, defaultMeal, date, onClose }: { recipe: Recipe
     <Sheet
       open={!!recipe}
       onOpenChange={(o) => !o && onClose()}
-      title={recipe ? `Log ${recipe.name}` : ''}
+      title={recipe ? `Registrar ${recipe.name}` : ''}
       footer={
         <Button
           className="w-full"
@@ -297,28 +297,28 @@ function LogRecipeSheet({ recipe, defaultMeal, date, onClose }: { recipe: Recipe
             if (!recipe) return
             try {
               await log.mutateAsync({ date, meal, recipeId: recipe.id, servings })
-              toast.success(`Added to ${MEAL_LABELS[meal]}`)
+              toast.success(`Añadido ${TO_MEAL[meal]}`)
               onClose()
             } catch (err) {
-              toast.error(err instanceof Error ? err.message : 'Could not log recipe')
+              toast.error(err instanceof Error ? err.message : 'No se ha podido registrar la receta')
             }
           }}
         >
-          Add to {MEAL_LABELS[meal]}
+          Añadir {TO_MEAL[meal]}
         </Button>
       }
     >
       {recipe && (
         <div className="space-y-5 pt-1">
-          <NutritionCard nutrition={recipe.nutrition.perServing} label="Per serving" />
+          <NutritionCard nutrition={recipe.nutrition.perServing} label="Por ración" />
           <div className="flex items-center justify-between">
-            <span className="text-[15px] font-medium">Servings</span>
+            <span className="text-[15px] font-medium">Raciones</span>
             <div className="flex items-center gap-2">
-              <Button size="icon" variant="outline" aria-label="Fewer servings" disabled={servings <= 0.5} onClick={() => setServings((s) => s - 0.5)}>
+              <Button size="icon" variant="outline" aria-label="Menos raciones" disabled={servings <= 0.5} onClick={() => setServings((s) => s - 0.5)}>
                 <Minus className="size-4" />
               </Button>
               <span className="w-10 text-center tabular text-lg font-semibold">{servings}</span>
-              <Button size="icon" variant="outline" aria-label="More servings" onClick={() => setServings((s) => s + 0.5)}>
+              <Button size="icon" variant="outline" aria-label="Más raciones" onClick={() => setServings((s) => s + 0.5)}>
                 <Plus className="size-4" />
               </Button>
             </div>

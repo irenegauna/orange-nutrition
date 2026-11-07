@@ -10,7 +10,7 @@ export function OfflineIndicator() {
   return (
     <div className="flex items-center justify-center gap-1.5 bg-surface-2 px-4 py-1.5 text-[11.5px] font-medium text-muted" role="status">
       <WifiOff className="size-3.5" />
-      Offline — your diary still works; barcode lookups need a connection
+      Sin conexión: tu diario sigue funcionando; para buscar códigos de barras necesitas conexión
     </div>
   )
 }

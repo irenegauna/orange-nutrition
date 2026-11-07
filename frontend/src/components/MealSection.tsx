@@ -1,6 +1,6 @@
 import { Plus } from 'lucide-react'
 import type { LogEntry, MealSummary, MealType } from '@/core/types'
-import { MEAL_LABELS, grams, kcal, quantityLabel } from '@/lib/format'
+import { MEAL_LABELS, TO_MEAL, grams, kcal, quantityLabel } from '@/lib/format'
 import { Card } from './ui/card'
 import { FoodListItem } from './food/FoodListItem'
 import { Emoji, MEAL_EMOJI, MEAL_TINT, foodEmoji } from '@/lib/emoji'
@@ -26,14 +26,14 @@ export function MealSection({
           <h3 className="text-[16px] font-semibold tracking-tight">{MEAL_LABELS[meal]}</h3>
           <p className="text-[12.5px] text-muted tabular">
             {entries.length
-              ? `${kcal(totals.calories)} kcal · P ${grams(totals.protein)} · C ${grams(totals.carbs)} · F ${grams(totals.fat)}`
-              : 'Nothing logged'}
+              ? `${kcal(totals.calories)} kcal · P ${grams(totals.protein)} · H ${grams(totals.carbs)} · G ${grams(totals.fat)}`
+              : 'Nada registrado'}
           </p>
         </div>
         <button
           type="button"
           onClick={() => onAdd(meal)}
-          aria-label={`Add food to ${MEAL_LABELS[meal]}`}
+          aria-label={`Añadir comida ${TO_MEAL[meal]}`}
           className="grid size-11 place-items-center rounded-full bg-brand-gradient text-white shadow-[0_4px_12px_-4px_rgba(240,127,46,0.7)] transition active:scale-95 dark:text-background"
         >
           <Plus className="size-5" />

@@ -3,17 +3,17 @@ import { NavLink } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
 const TABS = [
-  { to: '/', label: 'Today', icon: House, end: true },
-  { to: '/nutrients', label: 'Nutrients', icon: Leaf },
-  { to: '/add', label: 'Add Food', icon: Plus, primary: true },
-  { to: '/assistant', label: 'Ideas', icon: Sparkles, aria: 'Recommendations' },
-  { to: '/history', label: 'History', icon: CalendarDays },
+  { to: '/', label: 'Hoy', icon: House, end: true },
+  { to: '/nutrients', label: 'Nutrientes', icon: Leaf },
+  { to: '/add', label: 'Añadir comida', icon: Plus, primary: true },
+  { to: '/assistant', label: 'Ideas', icon: Sparkles, aria: 'Recomendaciones' },
+  { to: '/history', label: 'Historial', icon: CalendarDays },
 ]
 
 export function BottomNavigation() {
   return (
     <nav
-      aria-label="Main"
+      aria-label="Principal"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-background/85 pb-[var(--safe-bottom)] backdrop-blur-xl backdrop-saturate-150"
     >
       <ul className="mx-auto flex h-[var(--nav-height)] max-w-lg items-stretch justify-around px-2">

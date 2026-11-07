@@ -105,13 +105,13 @@ type Convertible = Pick<Food, 'servings' | 'densityGPerMl'> | Pick<FoodSnapshot,
  */
 export function quantityToGrams(quantity: Quantity, food: Convertible): number {
   const { amount, unit } = quantity;
-  if (!Number.isFinite(amount) || amount < 0) throw new ConversionError(`Invalid quantity amount: ${amount}`);
+  if (!Number.isFinite(amount) || amount < 0) throw new ConversionError(`Cantidad no válida: ${amount}`);
   if (isMassUnit(unit)) return massToGrams(amount, unit);
   if (unit === 'serving') {
     const serving =
       (quantity.servingId && food.servings.find((s) => s.id === quantity.servingId)) ||
       (!quantity.servingId ? food.servings.find((s) => s.isDefault) : undefined);
-    if (!serving) throw new ConversionError(`Serving "${quantity.servingId ?? 'default'}" not defined for this food`);
+    if (!serving) throw new ConversionError(`La ración "${quantity.servingId ?? 'por defecto'}" no existe para este alimento`);
     return amount * serving.grams;
   }
   if (isVolumeUnit(unit)) {
@@ -119,7 +119,7 @@ export function quantityToGrams(quantity: Quantity, food: Convertible): number {
     if (food.densityGPerMl && food.densityGPerMl > 0) return ml * food.densityGPerMl;
     const volServing = food.servings.find((s) => s.volumeMl && s.volumeMl > 0);
     if (volServing && volServing.volumeMl) return ml * (volServing.grams / volServing.volumeMl);
-    throw new ConversionError(`Cannot convert ${unit} to grams: food has no density or volume-based serving`);
+    throw new ConversionError(`No se puede convertir ${unit} a gramos: este alimento no tiene densidad ni raciones por volumen`);
   }
-  throw new ConversionError(`Unsupported unit: ${String(unit)}`);
+  throw new ConversionError(`Unidad no admitida: ${String(unit)}`);
 }

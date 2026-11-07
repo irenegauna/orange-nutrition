@@ -63,19 +63,19 @@ export const ESPEN_ADJUSTED_WEIGHT_FACTOR = 0.33;
 export const MIN_ADULT_AGE = 18;
 
 export const TARGET_SOURCES = [
-  'EFSA (2013) Dietary Reference Values for energy — Henry (2005) equations × PAL',
-  'EASO (2015) European Guidelines for Obesity Management in Adults — ~600 kcal/day deficit',
-  'NICE NG246 (2025) Overweight and obesity management — low-energy diets only in specialist care',
-  'Iraki et al. (2019) Sports 7:154 — ~10–20 % energy surplus for gaining',
-  'EFSA (2012) Dietary Reference Values for protein — 0.83 g/kg body weight',
-  'Leidy et al. (2015) AJCN 101:1320S — 1.2–1.6 g/kg protein preserves lean mass when losing weight',
-  'ESPEN guideline on hospital nutrition — adjusted body weight for protein with obesity',
-  'WHO (2023) Saturated and trans-fatty acid intake — saturated fat ≤ 10 % of energy',
-  'EFSA (2010) Dietary Reference Values for fats and for carbohydrates & fibre',
-  'EFSA (2019) Dietary Reference Values for sodium — 2 g/day',
+  'EFSA (2013) Valores dietéticos de referencia de energía — ecuaciones de Henry (2005) × nivel de actividad (PAL)',
+  'EASO (2015) Guías europeas para el manejo de la obesidad en adultos — déficit de ~600 kcal/día',
+  'NICE NG246 (2025) Manejo del sobrepeso y la obesidad — dietas muy bajas en energía solo con atención especializada',
+  'Iraki et al. (2019) Sports 7:154 — superávit de ~10–20 % para ganar peso',
+  'EFSA (2012) Valores dietéticos de referencia de proteínas — 0,83 g/kg de peso corporal',
+  'Leidy et al. (2015) AJCN 101:1320S — 1,2–1,6 g/kg de proteína preservan la masa magra al perder peso',
+  'Guía ESPEN de nutrición hospitalaria — peso ajustado para la proteína en caso de obesidad',
+  'OMS (2023) Ingesta de ácidos grasos saturados y trans — grasas saturadas ≤ 10 % de la energía',
+  'EFSA (2010) Valores dietéticos de referencia de grasas, hidratos de carbono y fibra',
+  'EFSA (2019) Valores dietéticos de referencia de sodio — 2 g/día',
   'AESAN (2019) Ingestas Nutricionales de Referencia para la población española',
-  'Reg. (EU) 1169/2011 Annex XIII — Reference Intake for total sugars',
-  'WHO BMI classification — underweight < 18.5, obesity ≥ 30',
+  'Reglamento (UE) 1169/2011, anexo XIII — ingesta de referencia de azúcares totales',
+  'Clasificación del IMC de la OMS — bajo peso < 18,5, obesidad ≥ 30',
 ];
 
 export function ageOn(profile: Pick<UserProfile, 'birthYear'>, date: LocalDate): number {
@@ -90,7 +90,7 @@ export function restingEnergyKcal(sex: UserProfile['sex'], age: number, weightKg
 
 export function computePersonalTargets(profile: UserProfile, date: LocalDate): PersonalTargets {
   const age = ageOn(profile, date);
-  if (age < MIN_ADULT_AGE) throw new RangeError('Targets are only available for adults (18+)');
+  if (age < MIN_ADULT_AGE) throw new RangeError('Los objetivos solo están disponibles para adultos (18+)');
   const heightM = profile.heightCm / 100;
   const bmi = profile.weightKg / (heightM * heightM);
   const warnings: string[] = [];
@@ -102,15 +102,15 @@ export function computePersonalTargets(profile: UserProfile, date: LocalDate): P
   let objective = profile.objective;
   if (objective === 'lose' && bmi < 18.5) {
     objective = 'maintain';
-    warnings.push('Your BMI is below 18.5, so targets are set to maintain your weight rather than lose. Consider talking to a health professional.');
+    warnings.push('Tu IMC es inferior a 18,5, así que los objetivos son para mantener tu peso y no para perderlo. Te recomendamos hablar con un profesional sanitario.');
   }
   let energyKcal = maintenanceKcal + (objective === 'lose' ? -WEIGHT_LOSS_DEFICIT_KCAL : objective === 'gain' ? maintenanceKcal * WEIGHT_GAIN_SURPLUS_FRACTION : 0);
   const floor = Math.max(restingKcal, MIN_ENERGY_KCAL);
   if (objective === 'lose' && energyKcal < floor) {
     energyKcal = Math.min(maintenanceKcal, floor);
-    warnings.push(`To stay safe without medical supervision, energy isn't set below ${Math.round(floor)} kcal/day, so the deficit is smaller than 600 kcal.`);
+    warnings.push(`Por seguridad, sin supervisión médica la energía no baja de ${Math.round(floor).toLocaleString('es-ES')} kcal/día, así que el déficit es menor de 600 kcal.`);
   }
-  if (bmi >= 30 && objective !== 'lose') warnings.push('A health professional can help you decide whether a weight-loss plan is right for you.');
+  if (bmi >= 30 && objective !== 'lose') warnings.push('Un profesional sanitario puede ayudarte a decidir si te conviene un plan para perder peso.');
 
   // Protein
   const proteinGPerKg = objective === 'maintain' ? PROTEIN_PRI_G_PER_KG : PROTEIN_WEIGHT_CHANGE_G_PER_KG;

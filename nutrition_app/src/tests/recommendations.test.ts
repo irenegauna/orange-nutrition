@@ -78,7 +78,7 @@ describe('recommendation engine (pure)', () => {
     });
     expect(recs[0]?.name).toBe('Lean chicken');
     expect(recs[0]?.scoreBreakdown.proteinDensity).toBe(1);
-    expect(recs[0]?.explanation.join(' ')).toMatch(/protein/);
+    expect(recs[0]?.explanation.join(' ')).toMatch(/prote/);
     // nutrition computed from data for the suggested grams
     const g = recs[0]!.ingredients[0]!.grams;
     expect(recs[0]!.nutrition.protein.amount).toBeCloseTo((31 * g) / 100, 10);

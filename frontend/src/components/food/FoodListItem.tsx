@@ -35,15 +35,15 @@ export function FoodListItem({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <span className="truncate text-[15px] font-medium">{name}</span>
-          {favorite && <Star className="size-3.5 shrink-0 fill-carbs text-carbs" aria-label="Favorite" />}
+          {favorite && <Star className="size-3.5 shrink-0 fill-carbs text-carbs" aria-label="Favorito" />}
         </div>
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12.5px] text-muted tabular">
           {detail && <span className="truncate">{detail}</span>}
           {macros && (
             <span className="flex gap-2">
               <span><b className="font-medium text-protein">P</b> {grams(macros.protein)}</span>
-              <span><b className="font-medium text-carbs">C</b> {grams(macros.carbs)}</span>
-              <span><b className="font-medium text-fat">F</b> {grams(macros.fat)}</span>
+              <span><b className="font-medium text-carbs">H</b> {grams(macros.carbs)}</span>
+              <span><b className="font-medium text-fat">G</b> {grams(macros.fat)}</span>
             </span>
           )}
         </div>

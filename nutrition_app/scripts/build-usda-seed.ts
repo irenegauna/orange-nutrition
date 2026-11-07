@@ -5,6 +5,8 @@
  *
  * Downloads the dataset once into scripts/.cache (no API key needed). Every nutrient value in the
  * output comes from the dataset; absent nutrients are left missing (never zero-filled).
+ * Food names/aliases come from usda-selection.ts and serving labels are translated with
+ * servingLabelsEs.ts, so the catalog is in Spanish (Spain).
  */
 import { createReadStream, existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -15,6 +17,7 @@ import { NUTRIENT_DEFINITIONS, USDA_ATTRIBUTION, USDA_LICENSE } from '../src/cor
 import { computeCompleteness } from '../src/core/nutrition/values';
 import type { Food, NutrientValues, ServingDefinition } from '../src/core/types';
 import { USDA_SELECTION } from './usda-selection';
+import { translateServingLabel } from './servingLabelsEs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const CACHE = join(here, '.cache');
@@ -144,8 +147,11 @@ async function main() {
     const meta = descriptions.get(id)!;
     const values = nutrients.get(id) ?? {};
     const servings = portions.get(id) ?? [];
+    // Default-serving detection runs on USDA's English labels, before they are translated.
     const def = servings.find((s) => /medium|nlea serving/i.test(s.label)) ?? servings[0];
     if (def) def.isDefault = true;
+    // Labels are shown to the user in Spanish (Spain); see scripts/servingLabelsEs.ts.
+    for (const s of servings) s.label = translateServingLabel(s.label);
     const ts = new Date(`${meta.publicationDate}T00:00:00Z`).toISOString();
     return {
       id: `usda_${fdcId}`,
@@ -156,7 +162,7 @@ async function main() {
       source: {
         type: 'usda_sr_legacy',
         sourceId: id,
-        originalName: meta.description,
+        originalName: meta.description, // USDA's English description, kept for attribution (not searched)
         attribution: USDA_ATTRIBUTION,
         license: USDA_LICENSE,
         url: `https://fdc.nal.usda.gov/food-details/${fdcId}/nutrients`,

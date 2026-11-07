@@ -130,7 +130,7 @@ export function portionForBudget(food: Food, kcalBudget: number, role: FoodRole 
 }
 
 function quantityLabel(food: Food, grams: number): string {
-  const formNote = food.form === 'raw' ? ' (raw weight)' : food.form === 'dry' ? ' (dry weight)' : '';
+  const formNote = food.form === 'raw' ? ' (peso en crudo)' : food.form === 'dry' ? ' (peso en seco)' : '';
   const serving = food.servings.find((s) => s.isDefault);
   if (serving && serving.grams > 0) {
     const n = grams / serving.grams;
@@ -155,11 +155,19 @@ function buildFoodCandidate(food: Food, grams: number): Candidate {
   return { id: `food:${food.id}`, kind: 'food', name: food.name, parts: [{ food, grams, foodId: food.id, name: food.name }], nutrition, totalGrams: grams, prepTimeMinutes: food.prepTimeMinutes ?? null };
 }
 
+/** "Pechuga de pollo con arroz blanco y espinacas" (Spanish: lower-case the following items). */
 function comboName(names: string[]): string {
   if (names.length <= 1) return names[0] ?? '';
   const [first, ...rest] = names;
-  return `${first} with ${rest.length === 1 ? rest[0] : `${rest.slice(0, -1).join(', ')} and ${rest[rest.length - 1]}`}`;
+  const lower = rest.map((n) => n.charAt(0).toLocaleLowerCase('es') + n.slice(1));
+  const last = lower[lower.length - 1]!;
+  // "y" becomes "e" before words starting with an i-sound (e.g. "e hinojo").
+  const and = /^h?i(?![aeiou])/i.test(last.normalize('NFD').replace(/[\u0300-\u036f]/g, '')) ? 'e' : 'y';
+  return `${first} con ${lower.length === 1 ? last : `${lower.slice(0, -1).join(', ')} ${and} ${last}`}`;
 }
+
+const MEAL_ES: Record<string, string> = { breakfast: 'desayuno', lunch: 'comida', dinner: 'cena', snack: 'snack' };
+const MEAL_ARTICLE_ES: Record<string, string> = { breakfast: 'el', lunch: 'la', dinner: 'la', snack: 'el' };
 
 function buildCombo(parts: { food: Food; grams: number }[]): Candidate {
   const nutrition = sumNutrients(parts.map((p) => ({ grams: p.grams, nutrients: nutrientsForGrams(p.food, p.grams) })));
@@ -250,7 +258,7 @@ function scoreCandidate(c: Candidate, ctx: RecommendationContext, budget: Calori
     comp.micronutrient = clamp(total.amount / (0.3 * target), 0, 1) * total.coverage.ratio;
     const def = NUTRIENTS[req.nutrientId];
     explanation.push(
-      `${def.name}: ${roundTo(total.amount, def.displayDecimals)} ${def.unit === 'ug' ? 'µg' : def.unit} (${roundTo((total.amount / target) * 100, 0)}% of ${ctx.goals?.targets[req.nutrientId] ? 'your target' : 'the reference daily value'})${total.isLowerBound ? ', some data missing' : ''}`,
+      `${def.name}: ${roundTo(total.amount, def.displayDecimals)} ${def.unit === 'ug' ? 'µg' : def.unit} (${roundTo((total.amount / target) * 100, 0)} % de ${ctx.goals?.targets[req.nutrientId] ? 'tu objetivo' : 'la referencia diaria'})${total.isLowerBound ? ', faltan algunos datos' : ''}`,
     );
   }
 
@@ -279,14 +287,15 @@ function scoreCandidate(c: Candidate, ctx: RecommendationContext, budget: Calori
 
   // Explanations
   const rk = roundTo(kcal, 0);
-  if (budget.overTarget) explanation.unshift(`You've reached your calorie target today; this is a light option (${rk} kcal).`);
-  else explanation.unshift(`≈ ${rk} kcal for a ${roundTo(budget.kcal, 0)} kcal ${req.mealType} budget (${roundTo(Math.max(0, budget.remainingKcal), 0)} kcal left today${budget.usingReference ? ', using a 2,000 kcal reference day because no calorie goal is set' : ''}).`);
-  explanation.push(`${roundTo(n.protein.amount, 1)} g protein (${roundTo(proteinShare * 100, 0)}% of energy), ${roundTo(n.carbohydrate.amount, 1)} g carbs, ${roundTo(n.fat.amount, 1)} g fat, ${roundTo(n.fiber.amount, 1)} g fiber${n.fiber.isLowerBound ? ' (some fiber data missing)' : ''}.`);
-  if (usedAvailable > 0) explanation.push(`Uses ${usedAvailable} of your available ingredient${usedAvailable > 1 ? 's' : ''}.`);
-  if (comp.favorite && comp.favorite > 0) explanation.push('Includes your favorites.');
-  if (c.prepTimeMinutes !== null) explanation.push(`Prep time ≈ ${c.prepTimeMinutes} min (estimate).`);
-  else explanation.push('Prep time unknown.');
-  if (c.parts.some((p) => !p.food)) explanation.push('Some ingredient data comes from saved snapshots.');
+  const es = (v: number, d = 0) => roundTo(v, d).toLocaleString('es-ES');
+  if (budget.overTarget) explanation.unshift(`Ya has llegado a tu objetivo de calorías de hoy; esta es una opción ligera (${es(rk)} kcal).`);
+  else explanation.unshift(`≈ ${es(rk)} kcal para un presupuesto de ${es(budget.kcal)} kcal en ${MEAL_ARTICLE_ES[req.mealType] ?? 'la'} ${MEAL_ES[req.mealType] ?? req.mealType} (te quedan ${es(Math.max(0, budget.remainingKcal))} kcal hoy${budget.usingReference ? '; se usa un día de referencia de 2.000 kcal porque no hay objetivo de calorías' : ''}).`);
+  explanation.push(`${es(n.protein.amount, 1)} g de proteína (${es(proteinShare * 100)} % de la energía), ${es(n.carbohydrate.amount, 1)} g de hidratos, ${es(n.fat.amount, 1)} g de grasa, ${es(n.fiber.amount, 1)} g de fibra${n.fiber.isLowerBound ? ' (faltan algunos datos de fibra)' : ''}.`);
+  if (usedAvailable > 0) explanation.push(`Usa ${usedAvailable} de los ingredientes que tienes.`);
+  if (comp.favorite && comp.favorite > 0) explanation.push('Incluye tus favoritos.');
+  if (c.prepTimeMinutes !== null) explanation.push(`Preparación ≈ ${c.prepTimeMinutes} min (estimación).`);
+  else explanation.push('Tiempo de preparación desconocido.');
+  if (c.parts.some((p) => !p.food)) explanation.push('Algunos datos de ingredientes vienen de copias guardadas.');
 
   return { candidate: c, score, breakdown, explanation };
 }

@@ -115,7 +115,8 @@ function guessCategory(product: OffProduct): FoodCategory {
 
 /** Full product → Food. Falls back to "Product <barcode>" when the product has no name. */
 export function normalizeOffProduct(barcode: string, product: OffProduct, now = new Date().toISOString()): Food {
-  const name = (product.product_name || product.product_name_en || product.generic_name || '').trim() || `Product ${barcode}`;
+  // Spanish-language app: prefer the Spanish name, then the product's main name, then English.
+  const name = (product.product_name_es || product.product_name || product.product_name_en || product.generic_name_es || product.generic_name || '').trim() || `Producto ${barcode}`;
   const brand = product.brands?.split(',')[0]?.trim() || undefined;
   const nutrientsPer100g = normalizeOffNutrients(product);
   const allergens = mapAllergenTags(product.allergens_tags);

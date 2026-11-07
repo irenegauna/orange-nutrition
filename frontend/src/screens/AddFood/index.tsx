@@ -31,25 +31,25 @@ export function AddFoodScreen() {
   return (
     <div className="animate-fade-up">
       <PageHeader
-        title="Add food" emoji="🍽️"
+        title="Añadir comida" emoji="🍽️"
         subtitle={
           <span>
-            Logging to <b className="font-semibold text-foreground">{MEAL_LABELS[meal]}</b> · {relativeDayLabel(date)}
+            Registrando en <b className="font-semibold text-foreground">{MEAL_LABELS[meal]}</b> · {relativeDayLabel(date)}
           </span>
         }
       />
       <SegmentedControl
-        label="Entry method"
+        label="Forma de añadir"
         stacked
         value={tab}
         onChange={(t) => update({ tab: t, barcode: null })}
         className="mb-5"
         options={[
-          { value: 'search', label: 'Search', icon: <Emoji>🔍</Emoji> },
-          { value: 'scan', label: 'Barcode', icon: <Emoji>🏷️</Emoji> },
-          { value: 'photo', label: 'Photo', icon: <Emoji>📸</Emoji> },
-          { value: 'custom', label: 'Custom', icon: <Emoji>✍️</Emoji> },
-          { value: 'recipes', label: 'Recipes', icon: <Emoji>👩‍🍳</Emoji> },
+          { value: 'search', label: 'Buscar', icon: <Emoji>🔍</Emoji> },
+          { value: 'scan', label: 'Código', icon: <Emoji>🏷️</Emoji> },
+          { value: 'photo', label: 'Foto', icon: <Emoji>📸</Emoji> },
+          { value: 'custom', label: 'Crear', icon: <Emoji>✍️</Emoji> },
+          { value: 'recipes', label: 'Recetas', icon: <Emoji>👩‍🍳</Emoji> },
         ]}
       />
       {tab === 'search' && <SearchTab meal={meal} date={date} />}

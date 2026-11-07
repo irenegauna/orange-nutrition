@@ -33,7 +33,7 @@ export function BarcodeScanner({
     async function start() {
       if (!navigator.mediaDevices?.getUserMedia) {
         setState('unavailable')
-        setMessage(window.isSecureContext ? 'This browser does not support camera access.' : 'Camera access requires HTTPS.')
+        setMessage(window.isSecureContext ? 'Este navegador no permite acceder a la cámara.' : 'Para usar la cámara hace falta HTTPS.')
         return
       }
       try {
@@ -77,10 +77,10 @@ export function BarcodeScanner({
         if (name === 'NotAllowedError' || name === 'SecurityError') setState('denied')
         else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
           setState('unavailable')
-          setMessage('No camera was found on this device.')
+          setMessage('No se ha encontrado ninguna cámara en este dispositivo.')
         } else {
           setState('error')
-          setMessage(err instanceof Error ? err.message : 'The camera could not be started.')
+          setMessage(err instanceof Error ? err.message : 'No se ha podido iniciar la cámara.')
         }
       }
     }
@@ -105,7 +105,7 @@ export function BarcodeScanner({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[70] flex flex-col bg-black text-white" role="dialog" aria-modal="true" aria-label="Barcode scanner">
+    <div className="fixed inset-0 z-[70] flex flex-col bg-black text-white" role="dialog" aria-modal="true" aria-label="Escáner de códigos de barras">
       <video ref={videoRef} className="absolute inset-0 size-full object-cover" playsInline muted autoPlay />
       {/* Dim everything except the scan window */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -121,7 +121,7 @@ export function BarcodeScanner({
       </div>
 
       <div className="relative z-10 flex items-center justify-between px-4 pt-[calc(var(--safe-top)+10px)]">
-        <button type="button" onClick={onClose} aria-label="Cancel scanning" className="grid size-11 place-items-center rounded-full bg-white/15 backdrop-blur">
+        <button type="button" onClick={onClose} aria-label="Cancelar escaneo" className="grid size-11 place-items-center rounded-full bg-white/15 backdrop-blur">
           <X className="size-5" />
         </button>
         {torchSupported && (
@@ -129,7 +129,7 @@ export function BarcodeScanner({
             type="button"
             onClick={toggleTorch}
             aria-pressed={torchOn}
-            aria-label={torchOn ? 'Turn flashlight off' : 'Turn flashlight on'}
+            aria-label={torchOn ? 'Apagar linterna' : 'Encender linterna'}
             className="grid size-11 place-items-center rounded-full bg-white/15 backdrop-blur"
           >
             {torchOn ? <FlashlightOff className="size-5" /> : <Flashlight className="size-5" />}
@@ -138,24 +138,24 @@ export function BarcodeScanner({
       </div>
 
       <div className="relative z-10 mt-auto px-6 pb-[calc(var(--safe-bottom)+24px)] text-center">
-        {state === 'starting' && <p className="text-[15px] text-white/80">Starting camera…</p>}
-        {state === 'scanning' && <p className="text-[15px] text-white/85">Align the barcode inside the frame</p>}
+        {state === 'starting' && <p className="text-[15px] text-white/80">Iniciando cámara…</p>}
+        {state === 'scanning' && <p className="text-[15px] text-white/85">Coloca el código de barras dentro del recuadro</p>}
         {state === 'denied' && (
           <div className="mx-auto max-w-xs rounded-3xl bg-white/10 p-5 backdrop-blur">
-            <p className="font-semibold">Camera access is off</p>
+            <p className="font-semibold">El acceso a la cámara está desactivado</p>
             <p className="mt-1 text-sm text-white/75">
-              Allow camera access in Settings › Safari › Camera (or in this web app's settings), then try again. You can also type the barcode.
+              Permite el acceso a la cámara en Ajustes › Safari › Cámara (o en los ajustes de esta web app) y vuelve a intentarlo. También puedes escribir el código de barras.
             </p>
           </div>
         )}
         {(state === 'unavailable' || state === 'error') && (
           <div className="mx-auto max-w-xs rounded-3xl bg-white/10 p-5 backdrop-blur">
-            <p className="font-semibold">Camera unavailable</p>
+            <p className="font-semibold">Cámara no disponible</p>
             <p className="mt-1 text-sm text-white/75">{message}</p>
           </div>
         )}
         <Button variant="outline" className="mt-4 border-white/25 bg-white/15 text-white hover:bg-white/20" onClick={onManual}>
-          <Keyboard className="size-4" /> Enter barcode manually
+          <Keyboard className="size-4" /> Introducir código a mano
         </Button>
       </div>
     </div>,

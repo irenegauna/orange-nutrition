@@ -29,7 +29,7 @@ export function ScanTab({ meal, date, onCreateCustom }: { meal: MealType; date: 
       setResult(r)
       if (r.status === 'found') setLogging(r.food)
     } catch (err) {
-      setResult({ status: 'error', barcode: code, message: err instanceof Error ? err.message : 'Lookup failed' })
+      setResult({ status: 'error', barcode: code, message: err instanceof Error ? err.message : 'Error en la búsqueda' })
     }
   }
 
@@ -37,7 +37,7 @@ export function ScanTab({ meal, date, onCreateCustom }: { meal: MealType; date: 
     e.preventDefault()
     const code = manual.replace(/\s/g, '')
     if (!/^\d{6,14}$/.test(code)) {
-      setManualError('Enter the 6–14 digits printed under the barcode.')
+      setManualError('Introduce los 6–14 dígitos impresos bajo el código de barras.')
       return
     }
     setManualError(undefined)
@@ -50,34 +50,34 @@ export function ScanTab({ meal, date, onCreateCustom }: { meal: MealType; date: 
         <div className="grid size-18 place-items-center rounded-3xl bg-linear-to-br from-soft to-meal-lunch">
           <Emoji className="text-[36px]">📷</Emoji>
         </div>
-        <h2 className="mt-4 text-lg font-semibold tracking-tight">Scan a barcode</h2>
-        <p className="mt-1 max-w-[30ch] text-sm text-muted">Point your camera at a packaged food's barcode to look up its nutrition.</p>
+        <h2 className="mt-4 text-lg font-semibold tracking-tight">Escanea un código de barras</h2>
+        <p className="mt-1 max-w-[30ch] text-sm text-muted">Apunta con la cámara al código de barras de un alimento envasado para ver su información nutricional.</p>
         <Button size="lg" className="mt-5 w-full max-w-xs" onClick={() => setScanning(true)} disabled={lookup.isPending}>
-          Open camera
+          Abrir cámara
         </Button>
         {!online && (
           <p className="mt-3 flex items-center gap-1.5 text-[13px] text-muted">
-            <WifiOff className="size-3.5" /> Product lookup needs an internet connection
+            <WifiOff className="size-3.5" /> Para buscar productos necesitas conexión a internet
           </p>
         )}
       </Card>
 
       <Card>
         <form onSubmit={submitManual} className="space-y-2" noValidate>
-          <Label htmlFor="manual-barcode">Or enter the number</Label>
+          <Label htmlFor="manual-barcode">O introduce el número</Label>
           <div className="flex gap-2">
             <Input
               id="manual-barcode"
               inputMode="numeric"
               pattern="[0-9]*"
               autoComplete="off"
-              placeholder="e.g. 3017620422003"
+              placeholder="p. ej. 3017620422003"
               value={manual}
               onChange={(e) => setManual(e.target.value)}
               aria-invalid={!!manualError}
             />
             <Button type="submit" disabled={lookup.isPending || !manual.trim()}>
-              Look up
+              Buscar
             </Button>
           </div>
           <FieldError>{manualError}</FieldError>
@@ -87,49 +87,49 @@ export function ScanTab({ meal, date, onCreateCustom }: { meal: MealType; date: 
       <div aria-live="polite">
         {lookup.isPending && (
           <Card className="flex items-center justify-center gap-3 py-6">
-            <Spinner /> <span className="text-sm text-muted">Looking up product…</span>
+            <Spinner /> <span className="text-sm text-muted">Buscando producto…</span>
           </Card>
         )}
         {result?.status === 'found' && !lookup.isPending && (
           <Card className="space-y-4">
             <div>
-              <p className="text-[12.5px] font-medium text-muted">Found · {result.food.barcode}</p>
+              <p className="text-[12.5px] font-medium text-muted">Encontrado · {result.food.barcode}</p>
               <h3 className="text-lg font-semibold tracking-tight">
                 <Emoji>{foodEmoji(result.food.name, result.food.category)}</Emoji> {result.food.name}
               </h3>
               {result.food.brand && <p className="text-sm text-muted">{result.food.brand}</p>}
             </div>
-            <NutritionCard nutrition={result.food.per100g} label="Per 100 g" />
+            <NutritionCard nutrition={result.food.per100g} label="Por 100 g" />
             <Button className="w-full" onClick={() => setLogging(result.food)}>
-              Choose amount & log
+              Elegir cantidad y registrar
             </Button>
           </Card>
         )}
         {result?.status === 'not_found' && (
           <Card className="flex flex-col items-center py-7 text-center">
             <Emoji className="text-[36px]">🤷</Emoji>
-            <p className="mt-3 font-semibold">Product not found</p>
+            <p className="mt-3 font-semibold">Producto no encontrado</p>
             <p className="mt-1 max-w-[30ch] text-sm text-muted">
-              Barcode {result.barcode} isn't in the database yet. You can add it as a custom food.
+              El código {result.barcode} aún no está en la base de datos. Puedes añadirlo como alimento propio.
             </p>
             <div className="mt-4 flex gap-2">
               <Button variant="outline" onClick={() => setScanning(true)}>
-                Scan again
+                Escanear de nuevo
               </Button>
-              <Button onClick={() => onCreateCustom(result.barcode)}>Create custom food</Button>
+              <Button onClick={() => onCreateCustom(result.barcode)}>Crear alimento propio</Button>
             </div>
           </Card>
         )}
         {result?.status === 'error' && (
           <Card className="flex flex-col items-center bg-danger/5 py-7 text-center" role="alert">
-            <p className="font-semibold">Lookup failed</p>
+            <p className="font-semibold">Error en la búsqueda</p>
             <p className="mt-1 max-w-[32ch] text-sm text-muted">{result.message}</p>
             <div className="mt-4 flex gap-2">
               <Button variant="outline" onClick={() => run(result.barcode)}>
-                Retry
+                Reintentar
               </Button>
               <Button variant="soft" onClick={() => onCreateCustom(result.barcode)}>
-                Enter manually
+                Introducir a mano
               </Button>
             </div>
           </Card>

@@ -2,7 +2,7 @@ import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameMont
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import type { AdherenceStatus, ISODate } from '@/core/types'
-import { fromISO, toISO, todayISO } from '@/lib/dates'
+import { capitalize, formatEs, fromISO, toISO, todayISO } from '@/lib/dates'
 import { cn } from '@/lib/utils'
 import { useHistory } from '@/services/queries'
 import { Button } from './ui/button'
@@ -39,16 +39,16 @@ export function CalendarGrid({
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <Button variant="ghost" size="icon" aria-label="Previous month" onClick={() => setMonth(addMonths(month, -1))}>
+        <Button variant="ghost" size="icon" aria-label="Mes anterior" onClick={() => setMonth(addMonths(month, -1))}>
           <ChevronLeft className="size-5" />
         </Button>
-        <span className="text-[15px] font-semibold" aria-live="polite">{format(month, 'MMMM yyyy')}</span>
-        <Button variant="ghost" size="icon" aria-label="Next month" onClick={() => setMonth(addMonths(month, 1))}>
+        <span className="text-[15px] font-semibold" aria-live="polite">{capitalize(formatEs(month, "MMMM 'de' yyyy"))}</span>
+        <Button variant="ghost" size="icon" aria-label="Mes siguiente" onClick={() => setMonth(addMonths(month, 1))}>
           <ChevronRight className="size-5" />
         </Button>
       </div>
       <div className="grid grid-cols-7 text-center text-[11px] font-medium uppercase tracking-wide text-muted" aria-hidden>
-        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+        {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d, i) => (
           <span key={i} className="py-1">{d}</span>
         ))}
       </div>
@@ -64,7 +64,7 @@ export function CalendarGrid({
               type="button"
               onClick={() => onChange(iso)}
               aria-pressed={selected}
-              aria-label={`${format(d, 'EEEE, MMMM d')}${s?.logged ? ', logged' : ''}`}
+              aria-label={`${formatEs(d, "EEEE, d 'de' MMMM")}${s?.logged ? ', con registros' : ''}`}
               className={cn(
                 'mx-auto flex size-11 flex-col items-center justify-center rounded-full text-[15px] tabular transition',
                 !inMonth && 'text-muted/40',
@@ -79,9 +79,9 @@ export function CalendarGrid({
         })}
       </div>
       <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11.5px] text-muted">
-        <span className="flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-fiber" />Within goal</span>
-        <span className="flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-carbs" />Under</span>
-        <span className="flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-protein" />Over</span>
+        <span className="flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-fiber" />Dentro del objetivo</span>
+        <span className="flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-carbs" />Por debajo</span>
+        <span className="flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-protein" />Por encima</span>
       </div>
     </div>
   )

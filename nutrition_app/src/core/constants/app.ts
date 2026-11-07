@@ -11,4 +11,5 @@ export const OFF_ATTRIBUTION = 'Data from Open Food Facts (openfoodfacts.org)';
 export const OFF_LICENSE = 'Open Database License (ODbL) 1.0; contents under Database Contents License';
 
 /** Seed dataset version; bump when usdaFoods.json changes so seeding re-runs. */
-export const SEED_VERSION = 1;
+// v2: catalog names, aliases and serving labels translated to Spanish (Spain); re-seed installed apps.
+export const SEED_VERSION = 2;

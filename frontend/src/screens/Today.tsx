@@ -1,4 +1,3 @@
-import { format } from 'date-fns'
 import { CalendarDays, ChevronLeft, ChevronRight, Settings } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -15,7 +14,7 @@ import { Card } from '@/components/ui/card'
 import { Sheet } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
-import { fromISO, greeting, relativeDayLabel, toISO, todayISO } from '@/lib/dates'
+import { capitalize, formatEs, fromISO, greeting, relativeDayLabel, toISO, todayISO } from '@/lib/dates'
 import { kcal } from '@/lib/format'
 import { useSelectedDate } from '@/lib/selectedDate'
 import { useDailyInsights, useDaySummary, usePreferences, useProfile } from '@/services/queries'
@@ -43,33 +42,33 @@ export function TodayScreen() {
     <div className="animate-fade-up">
       <header className="flex items-start justify-between gap-3 pb-5 pt-3">
         <div className="min-w-0">
-          <p className="text-[13px] font-medium text-muted">{format(fromISO(date), 'EEEE, MMMM d')}</p>
+          <p className="text-[13px] font-medium text-muted">{capitalize(formatEs(fromISO(date), "EEEE, d 'de' MMMM"))}</p>
           <h1 className="mt-0.5 truncate text-[28px] font-semibold leading-tight tracking-tight">
             {isToday ? `${greeting()}${name ? `, ${name}` : ''}` : relativeDayLabel(date)}{' '}
             {isToday && <Emoji>{greetingEmoji()}</Emoji>}
           </h1>
         </div>
         <div className="flex shrink-0 gap-2">
-          <IconButton label="Choose date" onClick={() => setCalendarOpen(true)}>
+          <IconButton label="Elegir fecha" onClick={() => setCalendarOpen(true)}>
             <CalendarDays className="size-5" />
           </IconButton>
-          <IconButton label="Settings" onClick={() => navigate('/settings')}>
+          <IconButton label="Ajustes" onClick={() => navigate('/settings')}>
             <Settings className="size-5" />
           </IconButton>
         </div>
       </header>
 
       <div className="mb-4 flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => shift(-1)} aria-label="Previous day">
-          <ChevronLeft className="size-4" /> Prev
+        <Button variant="ghost" size="sm" onClick={() => shift(-1)} aria-label="Día anterior">
+          <ChevronLeft className="size-4" /> Anterior
         </Button>
         {!isToday && (
           <Button variant="soft" size="sm" onClick={() => setDate(todayISO())}>
-            Back to today
+            Volver a hoy
           </Button>
         )}
-        <Button variant="ghost" size="sm" onClick={() => shift(1)} aria-label="Next day">
-          Next <ChevronRight className="size-4" />
+        <Button variant="ghost" size="sm" onClick={() => shift(1)} aria-label="Día siguiente">
+          Siguiente <ChevronRight className="size-4" />
         </Button>
       </div>
 
@@ -87,8 +86,8 @@ export function TodayScreen() {
             >
               <Emoji className="text-[28px]">👤</Emoji>
               <span className="min-w-0 flex-1">
-                <span className="block text-[15px] font-semibold">Personalise your targets</span>
-                <span className="block text-[13px] text-foreground/70">Add your age, height, weight and goal — we’ll calculate what you need (EU guidelines).</span>
+                <span className="block text-[15px] font-semibold">Personaliza tus objetivos</span>
+                <span className="block text-[13px] text-foreground/70">Añade tu edad, altura, peso y objetivo, y calcularemos lo que necesitas (según las pautas de la UE).</span>
               </span>
               <ChevronRight className="size-5 shrink-0 text-muted" />
             </button>
@@ -96,20 +95,20 @@ export function TodayScreen() {
           <Card className="flex flex-col items-center gap-5 bg-linear-to-br from-surface via-surface to-soft sm:flex-row sm:items-center sm:gap-8">
             <CalorieProgress consumed={day.data.totals.calories} target={day.data.goals.calories} />
             <div className="grid w-full grid-cols-2 gap-x-4 gap-y-3 sm:flex-1">
-              <Stat emoji="🍽️" label="Eaten" value={kcal(day.data.totals.calories)} unit="kcal" />
-              <Stat emoji="🎯" label="Target" value={kcal(day.data.goals.calories)} unit="kcal" />
+              <Stat emoji="🍽️" label="Consumido" value={kcal(day.data.totals.calories)} unit="kcal" />
+              <Stat emoji="🎯" label="Objetivo" value={kcal(day.data.goals.calories)} unit="kcal" />
             </div>
           </Card>
 
           <Card>
-            <h2 className="sr-only">Macronutrients</h2>
+            <h2 className="sr-only">Macronutrientes</h2>
             <div className="grid grid-cols-3 gap-4">
-              <MacroProgressBar compact label="Protein" tone="protein" consumed={day.data.totals.protein} target={day.data.goals.protein} />
-              <MacroProgressBar compact label="Carbs" tone="carbs" consumed={day.data.totals.carbs} target={day.data.goals.carbs} />
-              <MacroProgressBar compact label="Fat" tone="fat" consumed={day.data.totals.fat} target={day.data.goals.fat} />
+              <MacroProgressBar compact label="Proteínas" tone="protein" consumed={day.data.totals.protein} target={day.data.goals.protein} />
+              <MacroProgressBar compact label="Hidratos" tone="carbs" consumed={day.data.totals.carbs} target={day.data.goals.carbs} />
+              <MacroProgressBar compact label="Grasas" tone="fat" consumed={day.data.totals.fat} target={day.data.goals.fat} />
             </div>
             <div className="mt-5 border-t border-border/70 pt-4">
-              <MacroProgressBar label="Fiber" tone="fiber" consumed={day.data.totals.fiber} target={day.data.goals.fiber} />
+              <MacroProgressBar label="Fibra" tone="fiber" consumed={day.data.totals.fiber} target={day.data.goals.fiber} />
             </div>
           </Card>
 
@@ -117,7 +116,7 @@ export function TodayScreen() {
             <Card className="border-transparent bg-linear-to-br from-soft to-meal-lunch">
               <div className="flex items-center gap-2 text-accent">
                 <Emoji className="text-[16px]">💡</Emoji>
-                <h2 className="text-[13px] font-semibold uppercase tracking-wide">Insights</h2>
+                <h2 className="text-[13px] font-semibold uppercase tracking-wide">Consejos</h2>
               </div>
               <ul className="mt-2 space-y-3">
                 {insights.data.map((i) => (
@@ -143,7 +142,7 @@ export function TodayScreen() {
           )}
 
           <div className="space-y-3 pt-2">
-            <h2 className="px-1 text-[13px] font-semibold uppercase tracking-wide text-muted">Meals</h2>
+            <h2 className="px-1 text-[13px] font-semibold uppercase tracking-wide text-muted">Comidas</h2>
             {MEAL_TYPES.map((m) => (
               <MealSection key={m} summary={day.data.meals[m]} onAdd={addTo} onSelectEntry={setEditing} />
             ))}
@@ -151,7 +150,7 @@ export function TodayScreen() {
         </div>
       )}
 
-      <Sheet open={calendarOpen} onOpenChange={setCalendarOpen} title="Choose a day">
+      <Sheet open={calendarOpen} onOpenChange={setCalendarOpen} title="Elige un día">
         <CalendarGrid
           value={date}
           onChange={(d) => {
@@ -181,7 +180,7 @@ function Stat({ emoji, label, value, unit }: { emoji: string; label: string; val
 
 function TodaySkeleton() {
   return (
-    <div className="space-y-4" role="status" aria-label="Loading your day">
+    <div className="space-y-4" role="status" aria-label="Cargando tu día">
       <Skeleton className="h-[290px] w-full rounded-[22px]" />
       <Skeleton className="h-[170px] w-full rounded-[22px]" />
       <Skeleton className="h-20 w-full rounded-[22px]" />

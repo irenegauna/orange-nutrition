@@ -225,9 +225,9 @@ export const aiSettingsSchema = z.object({
 // ── Personal profile ─────────────────────────────────────────────────────
 export const userProfileInputSchema = z.object({
   sex: z.enum(['female', 'male']),
-  age: z.number().int('Age must be a whole number').min(18, 'Targets are for adults (18+)').max(110, 'Check the age'),
-  heightCm: z.number().min(120, 'Height looks too low (cm)').max(230, 'Height looks too high (cm)'),
-  weightKg: z.number().min(30, 'Weight looks too low (kg)').max(300, 'Weight looks too high (kg)'),
+  age: z.number().int('La edad debe ser un número entero').min(18, 'Los objetivos son para adultos (18+)').max(110, 'Revisa la edad'),
+  heightCm: z.number().min(120, 'La altura parece demasiado baja (cm)').max(230, 'La altura parece demasiado alta (cm)'),
+  weightKg: z.number().min(30, 'El peso parece demasiado bajo (kg)').max(300, 'El peso parece demasiado alto (kg)'),
   activity: z.enum(['sedentary', 'moderate', 'active', 'very_active']),
   objective: z.enum(['lose', 'maintain', 'gain']),
 });

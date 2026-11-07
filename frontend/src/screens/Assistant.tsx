@@ -12,7 +12,7 @@ import { ErrorState } from '@/components/States'
 import { Button } from '@/components/ui/button'
 import { Sheet } from '@/components/ui/sheet'
 import { mealForNow } from '@/lib/dates'
-import { MEAL_LABELS } from '@/lib/format'
+import { TO_MEAL } from '@/lib/format'
 import { useSelectedDate } from '@/lib/selectedDate'
 import { useAiStatus, useAsk, useLogRecommendation, useSuggestedPrompts } from '@/services/queries'
 
@@ -86,12 +86,12 @@ export function AssistantScreen() {
   return (
     <div className="flex min-h-[calc(100dvh-var(--nav-height)-var(--safe-bottom)-var(--safe-top)-40px)] flex-col">
       <PageHeader
-        title="Assistant"
+        title="Asistente"
         emoji="✨"
-        subtitle={aiOn ? 'Chat with Gemini about your food, goals and meals' : "Meal ideas from your goals and today's diary"}
+        subtitle={aiOn ? 'Habla con Gemini sobre tu alimentación, tus objetivos y tus comidas' : 'Ideas de comidas según tus objetivos y tu diario de hoy'}
         actions={
           messages.length > 0 && (
-            <IconButton label="Clear conversation" onClick={() => setMessages([])}>
+            <IconButton label="Borrar conversación" onClick={() => setMessages([])}>
               <RotateCcw className="size-[18px]" />
             </IconButton>
           )
@@ -103,22 +103,22 @@ export function AssistantScreen() {
           <div className="animate-fade-up rounded-[var(--radius-card)] bg-soft p-5">
             <div className="flex items-center gap-2 text-accent">
               <span aria-hidden className="emoji">🍊</span>
-              <p className="text-[13px] font-semibold uppercase tracking-wide">How this works</p>
+              <p className="text-[13px] font-semibold uppercase tracking-wide">Cómo funciona</p>
             </div>
             {aiOn ? (
               <p className="mt-2 text-[15px] leading-relaxed">
-                Ask anything about your eating: what to cook tonight, how your protein is going, ideas with what's in your fridge. Answers come from
-                Google Gemini using today's diary and your goals; meal cards are checked against your allergies and their nutrition is always
-                calculated from the food database.
+                Pregunta lo que quieras sobre tu alimentación: qué cocinar esta noche, cómo vas de proteína, ideas con lo que tienes en la nevera. Las
+                respuestas las da Google Gemini a partir de tu diario de hoy y tus objetivos; las propuestas de platos se comprueban con tus alergias y
+                sus valores nutricionales siempre se calculan con la base de datos de alimentos.
               </p>
             ) : (
               <>
                 <p className="mt-2 text-[15px] leading-relaxed">
-                  Suggestions come from a rule-based engine that looks at your targets, what you've logged today, your diet and allergies. Nutrition is
-                  always calculated from the food database. Try one of the prompts below.
+                  Las sugerencias salen de un motor de reglas que tiene en cuenta tus objetivos, lo que has registrado hoy, tu dieta y tus alergias. Los
+                  valores nutricionales siempre se calculan con la base de datos de alimentos. Prueba una de las preguntas de abajo.
                 </p>
                 <Button variant="outline" size="sm" className="mt-3" onClick={() => navigate('/settings#ai')}>
-                  <Settings2 className="size-4" /> Turn on the Gemini AI assistant
+                  <Settings2 className="size-4" /> Activar el asistente de IA Gemini
                 </Button>
               </>
             )}
@@ -169,7 +169,7 @@ export function AssistantScreen() {
 
       <div className="sticky bottom-[calc(var(--nav-height)+var(--safe-bottom))] -mx-4 bg-background/90 px-4 pb-3 pt-2 backdrop-blur-xl sm:mx-0 sm:px-0">
         {prompts.data && (
-          <div className="no-scrollbar -mx-4 mb-2 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0" aria-label="Suggested prompts">
+          <div className="no-scrollbar -mx-4 mb-2 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0" aria-label="Preguntas sugeridas">
             {prompts.data.map((p) => (
               <PromptChip key={p} text={p} onClick={() => send(p)} disabled={ask.isPending} />
             ))}
@@ -177,18 +177,18 @@ export function AssistantScreen() {
         )}
         <form onSubmit={onSubmit} className="flex items-center gap-2">
           <label htmlFor="chat-input" className="sr-only">
-            Ask for a recommendation
+            Pide una recomendación
           </label>
           <input
             id="chat-input"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={aiOn ? 'Ask me anything about your food…' : 'Ask about meals, protein, fiber…'}
+            placeholder={aiOn ? 'Pregúntame lo que quieras sobre tu alimentación…' : 'Pregunta por comidas, proteína, fibra…'}
             enterKeyHint="send"
             autoComplete="off"
             className="h-12 min-w-0 flex-1 rounded-full border border-border bg-surface px-5 text-base outline-none placeholder:text-muted/80 focus:border-primary focus:ring-4 focus:ring-primary/15"
           />
-          <Button type="submit" size="icon" className="size-12" aria-label="Send" disabled={!input.trim() || ask.isPending}>
+          <Button type="submit" size="icon" className="size-12" aria-label="Enviar" disabled={!input.trim() || ask.isPending}>
             <ArrowUp className="size-5" />
           </Button>
         </form>
@@ -208,12 +208,12 @@ export function AssistantScreen() {
 }
 
 const PROMPT_EMOJI: [RegExp, string][] = [
-  [/dinner|lunch|breakfast|eat/i, '🍽️'],
-  [/protein/i, '💪'],
-  [/calorie|kcal/i, '🔥'],
-  [/make with|ingredients/i, '🥚'],
-  [/fiber|fibre/i, '🌾'],
-  [/nutrient|vitamin|week/i, '💊'],
+  [/cen[oa]|comer|comida|desayun|dinner|lunch|breakfast|eat/i, '🍽️'],
+  [/prote[ií]na|protein/i, '💪'],
+  [/calor[ií]a|calorie|kcal/i, '🔥'],
+  [/hacer con|ingredientes|make with|ingredients/i, '🥚'],
+  [/fibra|fiber|fibre/i, '🌾'],
+  [/nutriente|vitamina|semana|nutrient|vitamin|week/i, '💊'],
 ]
 
 function PromptChip({ text, onClick, disabled }: { text: string; onClick: () => void; disabled?: boolean }) {
@@ -237,11 +237,11 @@ function RecipeDetailSheet({ rec, onClose, onAdd }: { rec: Recommendation | null
       open={!!rec}
       onOpenChange={(o) => !o && onClose()}
       title={rec?.name ?? ''}
-      description={rec ? [rec.prepMinutes !== null ? `~${rec.prepMinutes} min` : null, 'Nutrition calculated from the food database'].filter(Boolean).join(' · ') : undefined}
+      description={rec ? [rec.prepMinutes !== null ? `~${rec.prepMinutes} min` : null, 'Valores nutricionales calculados con la base de datos de alimentos'].filter(Boolean).join(' · ') : undefined}
       footer={
         rec && (
           <Button size="lg" className="w-full" onClick={() => onAdd(rec)}>
-            Add to diary
+            Añadir al diario
           </Button>
         )
       }
@@ -251,7 +251,7 @@ function RecipeDetailSheet({ rec, onClose, onAdd }: { rec: Recommendation | null
           <NutritionCard nutrition={rec.nutrition} />
           <p className="rounded-2xl bg-sage-soft px-4 py-3 text-sm leading-relaxed text-sage">{rec.explanation}</p>
           <section>
-            <h3 className="mb-1 text-[13px] font-semibold uppercase tracking-wide text-muted">Ingredients</h3>
+            <h3 className="mb-1 text-[13px] font-semibold uppercase tracking-wide text-muted">Ingredientes</h3>
             <ul className="divide-y divide-border/70">
               {rec.ingredients.map((i) => (
                 <li key={i.name} className="flex min-h-11 items-center justify-between gap-3 py-2 text-[15px]">
@@ -263,7 +263,7 @@ function RecipeDetailSheet({ rec, onClose, onAdd }: { rec: Recommendation | null
           </section>
           {rec.steps && rec.steps.length > 0 && (
             <section>
-              <h3 className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-muted">Steps</h3>
+              <h3 className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-muted">Pasos</h3>
               <ol className="space-y-2.5">
                 {rec.steps.map((s, i) => (
                   <li key={i} className="flex gap-3 text-[15px] leading-relaxed">
@@ -287,7 +287,7 @@ function AddRecommendationSheet({ rec, date, onClose }: { rec: Recommendation | 
     <Sheet
       open={!!rec}
       onOpenChange={(o) => !o && onClose()}
-      title="Add to diary"
+      title="Añadir al diario"
       description={rec?.name}
       footer={
         <Button
@@ -298,14 +298,14 @@ function AddRecommendationSheet({ rec, date, onClose }: { rec: Recommendation | 
             if (!rec) return
             try {
               await log.mutateAsync({ date, meal, recommendation: rec })
-              toast.success(`${rec.name} added to ${MEAL_LABELS[meal]}`)
+              toast.success(`${rec.name} añadido ${TO_MEAL[meal]}`)
               onClose()
             } catch (err) {
-              toast.error(err instanceof Error ? err.message : 'Could not add')
+              toast.error(err instanceof Error ? err.message : 'No se ha podido añadir')
             }
           }}
         >
-          Add to {MEAL_LABELS[meal]}
+          Añadir {TO_MEAL[meal]}
         </Button>
       }
     >

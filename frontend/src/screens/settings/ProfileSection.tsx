@@ -14,19 +14,19 @@ import { cn } from '@/lib/utils'
 import { useProfile, useSaveProfile } from '@/services/queries'
 
 const ACTIVITY: { value: ActivityLevel; emoji: string; label: string; hint: string }[] = [
-  { value: 'sedentary', emoji: '🛋️', label: 'Mostly sitting', hint: 'Desk job, little exercise' },
-  { value: 'moderate', emoji: '🚶', label: 'Lightly active', hint: 'Walking, or exercise 2–3 times a week' },
-  { value: 'active', emoji: '🚴', label: 'Active', hint: 'On your feet a lot, or exercise most days' },
-  { value: 'very_active', emoji: '🏋️', label: 'Very active', hint: 'Physical job or hard training every day' },
+  { value: 'sedentary', emoji: '🛋️', label: 'Vida sedentaria', hint: 'Trabajo de oficina, poco ejercicio' },
+  { value: 'moderate', emoji: '🚶', label: 'Actividad ligera', hint: 'Caminas, o haces ejercicio 2–3 veces por semana' },
+  { value: 'active', emoji: '🚴', label: 'Activo', hint: 'Pasas mucho tiempo de pie, o haces ejercicio casi todos los días' },
+  { value: 'very_active', emoji: '🏋️', label: 'Muy activo', hint: 'Trabajo físico o entrenamiento intenso a diario' },
 ]
 
 const OBJECTIVES: { value: WeightObjective; label: string; emoji: string }[] = [
-  { value: 'lose', label: 'Lose', emoji: '📉' },
-  { value: 'maintain', label: 'Maintain', emoji: '⚖️' },
-  { value: 'gain', label: 'Gain', emoji: '📈' },
+  { value: 'lose', label: 'Perder', emoji: '📉' },
+  { value: 'maintain', label: 'Mantener', emoji: '⚖️' },
+  { value: 'gain', label: 'Ganar', emoji: '📈' },
 ]
 
-const FIELD_NAMES: Record<string, string> = { sex: 'sex', age: 'age', heightCm: 'height', weightKg: 'weight' }
+const FIELD_NAMES: Record<string, string> = { sex: 'sexo', age: 'edad', heightCm: 'altura', weightKg: 'peso' }
 
 interface Draft {
   sex: Sex | null
@@ -70,14 +70,14 @@ export function ProfileSection({ fallbackGoals }: { fallbackGoals: Goals }) {
     let height = num(draft!.heightCm)
     if (height > 0 && height < 3) height = Math.round(height * 100) // entered in metres
     const weight = num(draft!.weightKg)
-    if (!draft!.sex) e.sex = 'Choose female or male'
-    if (!draft!.age.trim() || !Number.isInteger(age) || age <= 0) e.age = 'Enter your age in years'
-    if (!(height > 0)) e.heightCm = 'Enter your height in cm'
-    if (!(weight > 0)) e.weightKg = 'Enter your weight in kg'
+    if (!draft!.sex) e.sex = 'Elige mujer u hombre'
+    if (!draft!.age.trim() || !Number.isInteger(age) || age <= 0) e.age = 'Introduce tu edad en años'
+    if (!(height > 0)) e.heightCm = 'Introduce tu altura en cm'
+    if (!(weight > 0)) e.weightKg = 'Introduce tu peso en kg'
     setErrors(e)
     const missing = Object.keys(e) as (keyof Draft)[]
     if (missing.length) {
-      toast.error(`Please complete: ${missing.map((k) => FIELD_NAMES[k]).join(', ')}`)
+      toast.error(`Completa: ${missing.map((k) => FIELD_NAMES[k]).join(', ')}`)
       const first = document.querySelector<HTMLElement>(`[data-field="${missing[0]}"]`)
       first?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       first?.querySelector<HTMLElement>('input, button')?.focus({ preventScroll: true })
@@ -86,10 +86,10 @@ export function ProfileSection({ fallbackGoals }: { fallbackGoals: Goals }) {
     try {
       await save.mutateAsync({ sex: draft!.sex!, age, heightCm: height, weightKg: weight, activity: draft!.activity, objective: draft!.objective })
       if (height !== num(draft!.heightCm)) setDraft({ ...draft!, heightCm: String(height) })
-      toast.success('🎯 Your daily targets are updated')
+      toast.success('🎯 Tus objetivos diarios se han actualizado')
       setTimeout(() => document.getElementById('targets')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not save your profile')
+      toast.error(err instanceof Error ? err.message : 'No se ha podido guardar tu perfil')
     }
   }
 
@@ -115,30 +115,30 @@ export function ProfileSection({ fallbackGoals }: { fallbackGoals: Goals }) {
   return (
     <>
       <section id="profile" className="scroll-mt-4">
-        <h2 className="px-1 text-[13px] font-semibold uppercase tracking-wide text-muted">👤 About you</h2>
-        <p className="mb-2 mt-0.5 px-1 text-[13px] text-muted">Your daily targets are calculated from this, following EU and Spanish references. Stored only on this device.</p>
+        <h2 className="px-1 text-[13px] font-semibold uppercase tracking-wide text-muted">👤 Sobre ti</h2>
+        <p className="mb-2 mt-0.5 px-1 text-[13px] text-muted">Con estos datos calculamos tus objetivos diarios, según las referencias de la UE y de España. Se guardan solo en este dispositivo.</p>
         <Card className="space-y-5">
           <div className="space-y-1.5" data-field="sex">
-            <Label>Sex</Label>
+            <Label>Sexo</Label>
             <SegmentedControl<Sex | ''>
-              label="Sex"
+              label="Sexo"
               value={draft.sex ?? ''}
               onChange={(v) => v && set({ sex: v })}
               options={[
-                { value: 'female', label: 'Female', icon: <Emoji>👩</Emoji> },
-                { value: 'male', label: 'Male', icon: <Emoji>👨</Emoji> },
+                { value: 'female', label: 'Mujer', icon: <Emoji>👩</Emoji> },
+                { value: 'male', label: 'Hombre', icon: <Emoji>👨</Emoji> },
               ]}
             />
             <FieldError>{errors.sex}</FieldError>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            {field('age', 'Age', 'y', '30')}
-            {field('heightCm', 'Height', 'cm', '165')}
-            {field('weightKg', 'Weight', 'kg', '60')}
+            {field('age', 'Edad', 'años', '30')}
+            {field('heightCm', 'Altura', 'cm', '165')}
+            {field('weightKg', 'Peso', 'kg', '60')}
           </div>
           <div className="space-y-2">
-            <Label>How active are you?</Label>
-            <div className="grid gap-2" role="radiogroup" aria-label="Activity level">
+            <Label>¿Cuánta actividad haces?</Label>
+            <div className="grid gap-2" role="radiogroup" aria-label="Nivel de actividad">
               {ACTIVITY.map((a) => {
                 const on = draft.activity === a.value
                 return (
@@ -165,18 +165,18 @@ export function ProfileSection({ fallbackGoals }: { fallbackGoals: Goals }) {
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>Your objective</Label>
+            <Label>Tu objetivo</Label>
             <SegmentedControl<WeightObjective>
-              label="Objective"
+              label="Objetivo"
               value={draft.objective}
               onChange={(v) => set({ objective: v })}
               options={OBJECTIVES.map((o) => ({ value: o.value, label: o.label, icon: <Emoji>{o.emoji}</Emoji> }))}
             />
-            {draft.objective === 'lose' && <p className="px-1 text-[12.5px] text-muted">About 0.5 kg a week — a gentle, sustainable pace.</p>}
-            {draft.objective === 'gain' && <p className="px-1 text-[12.5px] text-muted">A small surplus, with extra protein.</p>}
+            {draft.objective === 'lose' && <p className="px-1 text-[12.5px] text-muted">Unos 0,5 kg por semana: un ritmo suave y sostenible.</p>}
+            {draft.objective === 'gain' && <p className="px-1 text-[12.5px] text-muted">Un pequeño excedente, con algo más de proteína.</p>}
           </div>
           <Button size="lg" className="w-full" disabled={save.isPending} onClick={submit}>
-            {profile.data ? 'Update my targets' : 'Calculate my targets'}
+            {profile.data ? 'Actualizar mis objetivos' : 'Calcular mis objetivos'}
           </Button>
         </Card>
       </section>
@@ -191,38 +191,38 @@ function TargetsCard({ state, fallbackGoals }: { state: ProfileState | null; fal
   const micros = (Object.keys(NUTRIENTS) as MicronutrientKey[]).filter((k) => g.micros[k] !== undefined)
   return (
     <section id="targets" className="scroll-mt-4">
-      <h2 className="px-1 text-[13px] font-semibold uppercase tracking-wide text-muted">🎯 Your daily targets</h2>
+      <h2 className="px-1 text-[13px] font-semibold uppercase tracking-wide text-muted">🎯 Tus objetivos diarios</h2>
       <p className="mb-2 mt-0.5 px-1 text-[13px] text-muted">
-        {state ? 'Calculated for you — update your details above to change them.' : 'General EU reference intakes for now. Fill in your details above to personalise them.'}
+        {state ? 'Calculados para ti: actualiza tus datos de arriba para cambiarlos.' : 'De momento, ingestas de referencia generales de la UE. Rellena tus datos de arriba para personalizarlos.'}
       </p>
       <Card className="space-y-4">
         <div className="rounded-2xl bg-linear-to-br from-soft to-meal-lunch p-4">
-          <p className="text-[12.5px] font-medium text-foreground/70">🔥 Energy</p>
+          <p className="text-[12.5px] font-medium text-foreground/70">🔥 Energía</p>
           <p className="tabular text-[32px] font-semibold leading-tight tracking-tight">
-            {kcal(g.calories)} <span className="text-[15px] font-medium text-muted">kcal / day</span>
+            {kcal(g.calories)} <span className="text-[15px] font-medium text-muted">kcal / día</span>
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2.5">
-          <Macro emoji="💪" label="Protein" value={`${grams(g.protein)} g`} note={b ? `${b.proteinGPerKg} g per kg` : 'at least'} />
-          <Macro emoji="🍞" label="Carbs" value={`${grams(g.carbs)} g`} note={b ? `${Math.round(b.carbPercentEnergy)}% of energy` : undefined} />
-          <Macro emoji="🥑" label="Fat" value={`${grams(g.fat)} g`} note={b ? `${b.fatPercentEnergy}% of energy` : undefined} />
-          <Macro emoji="🌾" label="Fiber" value={`${grams(g.fiber)} g`} note="at least" />
+          <Macro emoji="💪" label="Proteínas" value={`${grams(g.protein)} g`} note={b ? `${b.proteinGPerKg.toLocaleString('es-ES')} g por kg` : 'como mínimo'} />
+          <Macro emoji="🍞" label="Hidratos" value={`${grams(g.carbs)} g`} note={b ? `${Math.round(b.carbPercentEnergy)}% de la energía` : undefined} />
+          <Macro emoji="🥑" label="Grasas" value={`${grams(g.fat)} g`} note={b ? `${b.fatPercentEnergy.toLocaleString('es-ES')}% de la energía` : undefined} />
+          <Macro emoji="🌾" label="Fibra" value={`${grams(g.fiber)} g`} note="como mínimo" />
         </div>
 
         {b && (
           <div className="space-y-2 rounded-2xl bg-surface-2/70 p-4 text-[13.5px] leading-relaxed">
-            <p className="font-semibold">How we got there</p>
-            <Step n="1">Resting energy (what your body burns at rest): <b className="tabular">{kcal(b.restingKcal)} kcal</b></Step>
+            <p className="font-semibold">Cómo lo calculamos</p>
+            <Step n="1">Energía en reposo (lo que tu cuerpo gasta en reposo): <b className="tabular">{kcal(b.restingKcal)} kcal</b></Step>
             <Step n="2">
-              × your activity ({b.pal}) = <b className="tabular">{kcal(b.maintenanceKcal)} kcal</b> to keep your weight
+              × tu actividad ({b.pal.toLocaleString('es-ES')}) = <b className="tabular">{kcal(b.maintenanceKcal)} kcal</b> para mantener tu peso
             </Step>
             {Math.round(b.adjustmentKcal) !== 0 && (
               <Step n="3">
                 {b.adjustmentKcal < 0 ? '−' : '+'}
-                {kcal(Math.abs(b.adjustmentKcal))} kcal for your objective = <b className="tabular">{kcal(b.energyKcal)} kcal</b>
+                {kcal(Math.abs(b.adjustmentKcal))} kcal por tu objetivo = <b className="tabular">{kcal(b.energyKcal)} kcal</b>
               </Step>
             )}
-            <Step n="🧪">Vitamins & minerals: {b.micronutrientReference}</Step>
+            <Step n="🧪">Vitaminas y minerales: {b.micronutrientReference}</Step>
           </div>
         )}
 
@@ -236,7 +236,7 @@ function TargetsCard({ state, fallbackGoals }: { state: ProfileState | null; fal
 
         <Collapsible.Root>
           <Collapsible.Trigger className="group flex min-h-11 w-full items-center justify-between text-left text-[14px] font-semibold">
-            💊 All vitamin & mineral targets
+            💊 Todos los objetivos de vitaminas y minerales
             <ChevronDown className="size-5 text-muted transition group-data-[state=open]:rotate-180" />
           </Collapsible.Trigger>
           <Collapsible.Content>
@@ -245,7 +245,7 @@ function TargetsCard({ state, fallbackGoals }: { state: ProfileState | null; fal
                 <li key={k} className="flex min-h-10 items-center justify-between gap-3 py-1.5">
                   <span>{NUTRIENTS[k].label}</span>
                   <span className="tabular text-muted">
-                    {NUTRIENTS[k].isLimit ? 'max ' : ''}
+                    {NUTRIENTS[k].isLimit ? 'máx. ' : ''}
                     {nutrientAmount(g.micros[k]!, NUTRIENTS[k].unit)}
                   </span>
                 </li>
@@ -257,7 +257,7 @@ function TargetsCard({ state, fallbackGoals }: { state: ProfileState | null; fal
         {b && (
           <Collapsible.Root>
             <Collapsible.Trigger className="group flex min-h-11 w-full items-center justify-between text-left text-[14px] font-semibold">
-              📚 Sources
+              📚 Fuentes
               <ChevronDown className="size-5 text-muted transition group-data-[state=open]:rotate-180" />
             </Collapsible.Trigger>
             <Collapsible.Content>
@@ -270,8 +270,9 @@ function TargetsCard({ state, fallbackGoals }: { state: ProfileState | null; fal
           </Collapsible.Root>
         )}
         <p className="text-[12px] leading-relaxed text-muted">
-          These are estimates: the equations are within about 10% for most people. If your weight doesn’t change the way you want after 2–4 weeks,
-          update your details or adjust with a professional. General guidance for healthy adults, not medical advice. If you’re pregnant, breastfeeding, or managing a health condition, ask a health professional.
+          Son estimaciones: para la mayoría de las personas, las ecuaciones aciertan con un margen de un 10 % aproximadamente. Si tu peso no cambia como
+          quieres en 2–4 semanas, actualiza tus datos o ajústalo con un profesional. Son pautas generales para adultos sanos, no consejo médico. Si estás
+          embarazada, en periodo de lactancia o tienes algún problema de salud, consulta a un profesional sanitario.
         </p>
       </Card>
     </section>

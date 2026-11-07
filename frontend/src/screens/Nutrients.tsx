@@ -21,9 +21,9 @@ import { useSelectedDate } from '@/lib/selectedDate'
 import { useDaySummary, useNutrientDetail, useNutrientReport } from '@/services/queries'
 
 const GROUPS: { key: NutrientGroup; label: string; emoji: string; tint: string }[] = [
-  { key: 'vitamins', label: 'Vitamins', emoji: '🍊', tint: 'bg-meal-breakfast' },
-  { key: 'minerals', label: 'Minerals', emoji: '⚡', tint: 'bg-meal-dinner' },
-  { key: 'other', label: 'Sugars & fats', emoji: '🍬', tint: 'bg-meal-lunch' },
+  { key: 'vitamins', label: 'Vitaminas', emoji: '🍊', tint: 'bg-meal-breakfast' },
+  { key: 'minerals', label: 'Minerales', emoji: '⚡', tint: 'bg-meal-dinner' },
+  { key: 'other', label: 'Azúcares y grasas', emoji: '🍬', tint: 'bg-meal-lunch' },
 ]
 
 export function NutrientsScreen() {
@@ -40,7 +40,7 @@ export function NutrientsScreen() {
 
   return (
     <div className="animate-fade-up">
-      <PageHeader title="Nutrients" emoji="🥦" eyebrow={relativeDayLabel(date)} />
+      <PageHeader title="Nutrientes" emoji="🥦" eyebrow={relativeDayLabel(date)} />
       {report.isError ? (
         <ErrorState error={report.error} onRetry={() => report.refetch()} />
       ) : !report.data ? (
@@ -51,28 +51,28 @@ export function NutrientsScreen() {
             <Card className="flex items-center gap-3 p-4">
               <span aria-hidden className="emoji text-[26px]">🥦</span>
               <p className="min-w-0 flex-1 text-[14px] leading-snug">
-                Nothing logged for this day yet. Browse below to learn what each nutrient does.
+                Aún no hay nada registrado este día. Echa un vistazo abajo para saber qué hace cada nutriente.
               </p>
               <Button size="sm" onClick={() => navigate('/add')}>
-                Log food
+                Registrar comida
               </Button>
             </Card>
           )}
           <MacroInfoCard />
           <Card>
-            <h2 className="text-[13px] font-semibold uppercase tracking-wide text-muted">Coverage</h2>
+            <h2 className="text-[13px] font-semibold uppercase tracking-wide text-muted">Cobertura</h2>
             <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-              <Summary emoji="✅" value={count('on-track')} label="On track" tone="text-sage" bg="bg-sage-soft" />
-              <Summary emoji="📉" value={count('low')} label="Below target" tone="text-warning" bg="bg-meal-lunch" />
-              <Summary emoji="❔" value={count('incomplete') + count('no-data')} label="Not enough data" tone="text-muted" bg="bg-surface-2" />
+              <Summary emoji="✅" value={count('on-track')} label="En objetivo" tone="text-sage" bg="bg-sage-soft" />
+              <Summary emoji="📉" value={count('low')} label="Por debajo" tone="text-warning" bg="bg-meal-lunch" />
+              <Summary emoji="❔" value={count('incomplete') + count('no-data')} label="Faltan datos" tone="text-muted" bg="bg-surface-2" />
             </div>
             <p className="mt-4 flex gap-2 rounded-2xl bg-surface-2/70 p-3 text-[12.5px] leading-relaxed text-muted">
               <Info className="mt-0.5 size-3.5 shrink-0" />
-              Many foods don't report every nutrient. Striped or dashed bars mean missing data — not a deficiency.
+              Muchos alimentos no indican todos los nutrientes. Las barras rayadas o discontinuas significan que faltan datos, no que tengas una carencia.
             </p>
             {day.data && (
               <div className="mt-4 border-t border-border/70 pt-4">
-                <MacroProgressBar label="Fiber" tone="fiber" consumed={day.data.totals.fiber} target={day.data.goals.fiber} />
+                <MacroProgressBar label="Fibra" tone="fiber" consumed={day.data.totals.fiber} target={day.data.goals.fiber} />
               </div>
             )}
           </Card>
@@ -133,7 +133,7 @@ function NutrientGroupCard({
           <span className="flex-1">
             <span className="block text-[16px] font-semibold tracking-tight">{label}</span>
             <span className="block text-[12.5px] text-muted">
-              {reported} of {items.length} with data
+              {reported} de {items.length} con datos
             </span>
           </span>
           <ChevronDown className="size-5 text-muted transition group-data-[state=open]:rotate-180" />
@@ -153,9 +153,9 @@ function NutrientGroupCard({
 function Legend() {
   return (
     <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 px-2 pb-2 text-[12px] text-muted">
-      <span className="flex items-center gap-2"><span className="h-2 w-6 rounded-full bg-fiber" />Confirmed</span>
-      <span className="flex items-center gap-2"><span className="hatched h-2 w-6 rounded-full" />Partial data</span>
-      <span className="flex items-center gap-2"><span className="h-2 w-6 rounded-full border border-dashed border-muted/50" />No data</span>
+      <span className="flex items-center gap-2"><span className="h-2 w-6 rounded-full bg-fiber" />Confirmado</span>
+      <span className="flex items-center gap-2"><span className="hatched h-2 w-6 rounded-full" />Datos parciales</span>
+      <span className="flex items-center gap-2"><span className="h-2 w-6 rounded-full border border-dashed border-muted/50" />Sin datos</span>
     </div>
   )
 }
@@ -178,7 +178,7 @@ function NutrientDetailSheet({
   const confirmed = status === 'low' || status === 'on-track' || status === 'high'
 
   return (
-    <Sheet open={!!nutrient} onOpenChange={(o) => !o && onClose()} title={info?.label ?? ''} description={info?.isLimit ? 'Upper limit (EFSA / EU reference intakes)' : 'Reference intake (AESAN 2019)'}>
+    <Sheet open={!!nutrient} onOpenChange={(o) => !o && onClose()} title={info?.label ?? ''} description={info?.isLimit ? 'Límite máximo (EFSA / ingestas de referencia de la UE)' : 'Ingesta de referencia (AESAN 2019)'}>
       {detail.isError ? (
         <ErrorState error={detail.error} />
       ) : !d ? (
@@ -192,34 +192,34 @@ function NutrientDetailSheet({
             </p>
             <p className="text-[13px] text-foreground/75">
               <span aria-hidden className="emoji mr-1.5">🍽️</span>
-              {d.info.isLimit ? 'Mostly from: ' : 'Find it in: '}
+              {d.info.isLimit ? 'Sobre todo en: ' : 'Lo encuentras en: '}
               {NUTRIENT_INFO[d.info.key].foods}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Tile label="Recorded intake" value={d.coverage.reportingEntries ? nutrientAmount(d.coverage.intake, d.info.unit) : '—'} />
-            <Tile label={d.info.isLimit ? 'Limit' : 'Reference target'} value={d.coverage.target ? nutrientAmount(d.coverage.target, d.info.unit) : 'Not set'} />
+            <Tile label="Ingesta registrada" value={d.coverage.reportingEntries ? nutrientAmount(d.coverage.intake, d.info.unit) : '—'} />
+            <Tile label={d.info.isLimit ? 'Límite' : 'Objetivo de referencia'} value={d.coverage.target ? nutrientAmount(d.coverage.target, d.info.unit) : 'Sin definir'} />
             <Tile
-              label="Of target"
+              label="Del objetivo"
               value={confirmed && d.coverage.percentOfTarget !== null ? percent(d.coverage.percentOfTarget) : '—'}
-              hint={!confirmed ? 'Shown once enough foods report it' : undefined}
+              hint={!confirmed ? 'Se muestra cuando suficientes alimentos lo indican' : undefined}
             />
-            <Tile label="Data completeness" value={percent(d.coverage.completeness * 100)} hint={`${d.coverage.reportingEntries} of ${d.coverage.totalEntries} foods report it`} />
+            <Tile label="Datos completos" value={percent(d.coverage.completeness * 100)} hint={`${d.coverage.reportingEntries} de ${d.coverage.totalEntries} alimentos lo indican`} />
           </div>
           {status && (
             <div className="flex items-center gap-2 rounded-2xl bg-surface-2/70 px-4 py-3 text-sm">
               <NutrientStatusBadge status={status} isLimit={d.info.isLimit} noTarget={d.coverage.target === null} />
               <span className="text-muted">
-                {status === 'no-data' && "None of this day's foods report this nutrient, so intake is unknown."}
-                {status === 'incomplete' && (d.coverage.target === null ? 'EFSA and AESAN set no reference value for this nutrient, so intake is shown without a verdict.' : 'Some foods are missing this value — actual intake is likely higher than recorded.')}
-                {status === 'low' && 'Recorded intake is well below the reference today. One day is only a snapshot — references describe your average intake over time.'}
-                {status === 'on-track' && (d.info.isLimit ? 'Recorded intake is within the limit.' : 'Recorded intake is at or close to the reference.')}
-                {status === 'high' && (d.info.isLimit ? 'Recorded intake is above the recommended limit.' : 'Recorded intake is well above the reference.')}
+                {status === 'no-data' && 'Ningún alimento de este día indica este nutriente, así que no se sabe cuánto has tomado.'}
+                {status === 'incomplete' && (d.coverage.target === null ? 'La EFSA y la AESAN no fijan un valor de referencia para este nutriente, así que se muestra la ingesta sin valoración.' : 'A algunos alimentos les falta este dato: probablemente tomas más de lo registrado.')}
+                {status === 'low' && 'Hoy la ingesta registrada está bastante por debajo de la referencia. Un día es solo una foto: las referencias se refieren a tu ingesta media a lo largo del tiempo.'}
+                {status === 'on-track' && (d.info.isLimit ? 'La ingesta registrada está dentro del límite.' : 'La ingesta registrada alcanza o casi alcanza la referencia.')}
+                {status === 'high' && (d.info.isLimit ? 'La ingesta registrada supera el límite recomendado.' : 'La ingesta registrada está bastante por encima de la referencia.')}
               </span>
             </div>
           )}
           <section>
-            <h3 className="mb-1 text-[13px] font-semibold uppercase tracking-wide text-muted">Main sources today</h3>
+            <h3 className="mb-1 text-[13px] font-semibold uppercase tracking-wide text-muted">Principales fuentes hoy</h3>
             {d.coverage.contributors.length ? (
               <ul className="divide-y divide-border/70">
                 {d.coverage.contributors.map((c) => (
@@ -230,19 +230,19 @@ function NutrientDetailSheet({
                 ))}
               </ul>
             ) : (
-              <p className="py-2 text-sm text-muted">No logged foods report this nutrient.</p>
+              <p className="py-2 text-sm text-muted">Ningún alimento registrado indica este nutriente.</p>
             )}
           </section>
           {d.suggestions.length > 0 && (
             <section>
-              <h3 className="mb-1 text-[13px] font-semibold uppercase tracking-wide text-muted">Good sources</h3>
+              <h3 className="mb-1 text-[13px] font-semibold uppercase tracking-wide text-muted">Buenas fuentes</h3>
               <ul className="divide-y divide-border/70">
                 {d.suggestions.map((f) => (
                   <li key={f.id}>
                     <FoodListItem
                       emoji={foodEmoji(f.name, f.category)}
                       name={f.name}
-                      detail={`${nutrientAmount(f.per100g.micros[d.info.key] ?? 0, d.info.unit)} per 100 g`}
+                      detail={`${nutrientAmount(f.per100g.micros[d.info.key] ?? 0, d.info.unit)} por 100 g`}
                       calories={f.per100g.calories}
                       onClick={() => onLog(f)}
                     />
@@ -268,11 +268,11 @@ function Tile({ label, value, hint }: { label: string; value: string; hint?: str
 }
 
 const MACRO_ROWS: { key: keyof typeof MACRO_INFO; label: string; emoji: string }[] = [
-  { key: 'calories', label: 'Energy (kcal)', emoji: '🔥' },
-  { key: 'protein', label: 'Protein', emoji: '💪' },
-  { key: 'carbs', label: 'Carbohydrates', emoji: '🍞' },
-  { key: 'fat', label: 'Fat', emoji: '🥑' },
-  { key: 'fiber', label: 'Fiber', emoji: '🌾' },
+  { key: 'calories', label: 'Energía (kcal)', emoji: '🔥' },
+  { key: 'protein', label: 'Proteínas', emoji: '💪' },
+  { key: 'carbs', label: 'Hidratos de carbono', emoji: '🍞' },
+  { key: 'fat', label: 'Grasas', emoji: '🥑' },
+  { key: 'fiber', label: 'Fibra', emoji: '🌾' },
 ]
 
 function MacroInfoCard() {
@@ -284,8 +284,8 @@ function MacroInfoCard() {
             <span aria-hidden className="emoji text-[20px]">📖</span>
           </span>
           <span className="flex-1">
-            <span className="block text-[16px] font-semibold tracking-tight">What each nutrient does</span>
-            <span className="block text-[12.5px] text-muted">Energy & macros here · tap any vitamin or mineral below</span>
+            <span className="block text-[16px] font-semibold tracking-tight">Qué hace cada nutriente</span>
+            <span className="block text-[12.5px] text-muted">Energía y macros aquí · toca cualquier vitamina o mineral de abajo</span>
           </span>
           <ChevronDown className="size-5 text-muted transition group-data-[state=open]:rotate-180" />
         </Collapsible.Trigger>
@@ -299,7 +299,7 @@ function MacroInfoCard() {
                   <div className="text-[14px] leading-relaxed">
                     <p className="font-semibold">{m.label}</p>
                     <p className="text-foreground/80">{info.does}</p>
-                    {'foods' in info && <p className="text-[12.5px] text-muted">Find it in: {info.foods}</p>}
+                    {'foods' in info && <p className="text-[12.5px] text-muted">Lo encuentras en: {info.foods}</p>}
                   </div>
                 </li>
               )

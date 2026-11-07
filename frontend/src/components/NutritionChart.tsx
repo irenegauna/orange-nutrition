@@ -55,7 +55,7 @@ function ChartTooltip({ active, payload, series }: { active?: boolean; payload?:
         return (
           <p key={s.key} className="flex justify-between gap-4 tabular text-muted">
             <span>{s.name}</span>
-            <span className="font-medium text-foreground">{v === null || v === undefined ? 'No data' : `${Math.round(Number(v)).toLocaleString()} ${s.unit}`}</span>
+            <span className="font-medium text-foreground">{v === null || v === undefined ? 'Sin datos' : `${Math.round(Number(v)).toLocaleString('es-ES')} ${s.unit}`}</span>
           </p>
         )
       })}

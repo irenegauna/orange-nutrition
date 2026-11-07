@@ -8,7 +8,7 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = 'Confirm',
+  confirmLabel = 'Confirmar',
   destructive,
   onConfirm,
   busy,
@@ -34,7 +34,7 @@ export function ConfirmDialog({
           {children}
           <div className="mt-6 grid grid-cols-2 gap-3">
             <D.Close asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">Cancelar</Button>
             </D.Close>
             <Button
               variant={destructive ? 'danger' : 'primary'}

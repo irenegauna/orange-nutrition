@@ -31,7 +31,7 @@ export function PageHeader({
             onClick={() => navigate(-1)}
             className="-ml-2 mb-1 flex h-11 items-center gap-0.5 pr-3 text-[15px] font-medium text-accent"
           >
-            <ChevronLeft className="size-5" /> Back
+            <ChevronLeft className="size-5" /> Atrás
           </button>
         )}
         {eyebrow && <div className="text-[13px] font-medium text-muted">{eyebrow}</div>}

@@ -27,23 +27,26 @@ export const MEAL_TINT: Record<MealType, string> = {
 export const MACRO_EMOJI = { protein: '💪', carbs: '🍞', fat: '🥑', fiber: '🌾', calories: '🔥' } as const
 
 // Name keywords first (most specific wins), then the backend's food category.
+// Food names are Spanish; they are matched lowercase with accents stripped (see `normalize`).
 const BY_NAME: [RegExp, string][] = [
-  [/\begg/, '🥚'], [/banana/, '🍌'], [/apple/, '🍎'], [/avocado/, '🥑'], [/orange|clementine|mandarin/, '🍊'],
-  [/lemon|lime/, '🍋'], [/strawberr/, '🍓'], [/blueberr/, '🫐'], [/grape/, '🍇'], [/watermelon|melon/, '🍉'],
-  [/pineapple/, '🍍'], [/mango/, '🥭'], [/peach|apricot|nectarine/, '🍑'], [/pear/, '🍐'], [/cherr/, '🍒'],
-  [/kiwi/, '🥝'], [/coconut/, '🥥'], [/tomato/, '🍅'], [/carrot/, '🥕'], [/broccoli|cauliflower/, '🥦'],
-  [/spinach|lettuce|kale|chard|cabbage/, '🥬'], [/potato/, '🥔'], [/sweet potato|yam/, '🍠'], [/corn/, '🌽'],
-  [/pepper/, '🫑'], [/cucumber|zucchini/, '🥒'], [/onion/, '🧅'], [/garlic/, '🧄'], [/mushroom/, '🍄'],
-  [/eggplant|aubergine/, '🍆'], [/lentil|bean|chickpea|pea\b|tofu|soy/, '🫘'], [/rice/, '🍚'],
-  [/pasta|spaghetti|noodle|macaroni/, '🍝'], [/bread|toast|baguette/, '🍞'], [/oat|cereal|granola|muesli|porridge/, '🥣'],
-  [/yogurt|yoghurt|kefir/, '🥛'], [/milk/, '🥛'], [/cheese|mozzarella|cheddar|feta/, '🧀'], [/butter/, '🧈'],
-  [/chicken|turkey|duck/, '🍗'], [/bacon|ham|pork|sausage/, '🥓'], [/beef|steak|lamb|veal/, '🥩'],
-  [/salmon|tuna|cod|sardine|tilapia|trout|fish|hake|mackerel/, '🐟'], [/shrimp|prawn|crab|lobster/, '🦐'],
-  [/almond|walnut|cashew|hazelnut|pistachio|nut\b|nuts/, '🥜'], [/peanut/, '🥜'], [/olive/, '🫒'],
-  [/honey/, '🍯'], [/chocolate|cocoa/, '🍫'], [/cookie|biscuit/, '🍪'], [/cake|muffin|pastry|croissant/, '🥐'],
-  [/ice cream/, '🍨'], [/coffee|espresso/, '☕'], [/tea\b/, '🍵'], [/juice/, '🧃'], [/water/, '💧'],
-  [/wine/, '🍷'], [/beer/, '🍺'], [/pizza/, '🍕'], [/burger/, '🍔'], [/sandwich|wrap/, '🥪'],
-  [/soup|stew|broth/, '🍲'], [/salad/, '🥗'], [/quinoa|couscous|barley|buckwheat|wheat|grain/, '🌾'],
+  [/boniato|batata/, '🍠'],
+  [/\bhuevos?\b|\bclara de huevo|\byema/, '🥚'], [/platano|banana/, '🍌'], [/manzana/, '🍎'], [/aguacate/, '🥑'],
+  [/naranja|mandarina|clementina/, '🍊'], [/limon|\blima\b/, '🍋'], [/fresa|freson/, '🍓'], [/arandano/, '🫐'], [/\buvas?\b/, '🍇'],
+  [/sandia|melon/, '🍉'], [/\bpina\b|anana/, '🍍'], [/mango/, '🥭'], [/melocoton|albaricoque|nectarina|paraguayo/, '🍑'], [/\bperas?\b/, '🍐'],
+  [/cereza|picota/, '🍒'], [/kiwi/, '🥝'], [/\bcoco\b/, '🥥'], [/tomate/, '🍅'], [/zanahoria/, '🥕'], [/brocoli|coliflor/, '🥦'],
+  [/espinaca|lechuga|\bkale\b|col rizada|acelga|\bcol\b|repollo|canonigo|rucula/, '🥬'], [/patata/, '🥔'], [/\bmaiz\b/, '🌽'],
+  [/pimiento/, '🫑'], [/pepino|calabacin/, '🥒'], [/cebolla|puerro/, '🧅'], [/\bajos?\b/, '🧄'], [/champinon|seta|\bhongo/, '🍄'],
+  [/berenjena/, '🍆'], [/lenteja|alubia|judia|frijol|garbanzo|guisante|\bhabas?\b|tofu|\bsoja/, '🫘'], [/\barroz/, '🍚'],
+  [/pasta|espagueti|macarron|fideo|tallarin|lasana/, '🍝'], [/\bpan\b|tostada|baguette|biscote/, '🍞'], [/avena|cereales|granola|muesli|gachas/, '🥣'],
+  [/\bcafe\b|espresso/, '☕'], [/yogur|kefir/, '🥛'], [/leche/, '🥛'], [/queso|mozzarella|cheddar|\bfeta\b|requeson/, '🧀'], [/mantequilla/, '🧈'],
+  [/salmon|atun|bacalao|sardina|tilapia|trucha|pescado|merluza|caballa|boqueron|anchoa|dorada|lubina/, '🐟'],
+  [/gamba|langostino|cangrejo|langosta|bogavante|camaron/, '🦐'],
+  [/pollo|pavo|pato\b/, '🍗'], [/bacon|beicon|jamon|cerdo|salchicha|chorizo|lomo embuchado|panceta/, '🥓'], [/ternera|vacuno|filete|chuleton|cordero|buey/, '🥩'],
+  [/almendra|nuez|nueces|anacardo|avellana|pistacho|frutos secos/, '🥜'], [/cacahuete/, '🥜'], [/aceituna|oliva/, '🫒'],
+  [/\bmiel\b/, '🍯'], [/chocolate|cacao/, '🍫'], [/galleta/, '🍪'], [/bizcocho|tarta|pastel|magdalena|bolleria|croissant|cruasan/, '🥐'],
+  [/helado/, '🍨'], [/\bte\b|infusion/, '🍵'], [/zumo/, '🧃'], [/\bagua\b/, '💧'],
+  [/\bvino\b/, '🍷'], [/cerveza/, '🍺'], [/pizza/, '🍕'], [/hamburguesa/, '🍔'], [/bocadillo|sandwich|wrap/, '🥪'],
+  [/sopa|guiso|estofado|caldo|cocido madrileno|puchero|potaje/, '🍲'], [/ensalada/, '🥗'], [/quinoa|cuscus|cebada|trigo sarraceno|alforfon|trigo|grano/, '🌾'],
 ]
 
 const BY_CATEGORY: Record<string, string> = {
@@ -52,10 +55,11 @@ const BY_CATEGORY: Record<string, string> = {
   condiments: '🧂', spices: '🌶️', beverages: '🥤', sweets: '🍫', prepared: '🍱', recipe: '👩‍🍳',
 }
 
+/** Lowercase and strip diacritics ("Plátano" → "platano", "Piña" → "pina"). */
+const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+
 export function foodEmoji(name: string, category?: string): string {
-  const n = name.toLowerCase()
-  // "Sweet potato" must beat "potato".
-  if (/sweet potato|yam/.test(n)) return '🍠'
+  const n = normalize(name)
   for (const [re, e] of BY_NAME) if (re.test(n)) return e
   return (category && BY_CATEGORY[category]) || '🍽️'
 }

@@ -6,11 +6,11 @@ import { classifyNutrientStatus, type NutrientStatus } from './nutrientStatus'
 import { NUTRIENT_INFO } from '@/lib/nutrientInfo'
 
 const STATUS_COPY: Record<NutrientStatus, string> = {
-  'no-data': 'No data yet',
-  incomplete: 'Partial data',
-  low: 'Below target',
-  'on-track': 'On track',
-  high: 'Above target',
+  'no-data': 'Sin datos aún',
+  incomplete: 'Datos parciales',
+  low: 'Por debajo',
+  'on-track': 'En objetivo',
+  high: 'Por encima',
 }
 
 const STATUS_CLASS: Record<NutrientStatus, string> = {
@@ -22,8 +22,8 @@ const STATUS_CLASS: Record<NutrientStatus, string> = {
 }
 
 export function NutrientStatusBadge({ status, isLimit, noTarget }: { status: NutrientStatus; isLimit?: boolean; noTarget?: boolean }) {
-  if (noTarget && status !== 'no-data') return <span className="text-[12px] font-semibold text-muted">No EU reference</span>
-  const label = isLimit && status === 'high' ? 'Above limit' : isLimit && status === 'on-track' ? 'Within limit' : STATUS_COPY[status]
+  if (noTarget && status !== 'no-data') return <span className="text-[12px] font-semibold text-muted">Sin referencia UE</span>
+  const label = isLimit && status === 'high' ? 'Supera el límite' : isLimit && status === 'on-track' ? 'Dentro del límite' : STATUS_COPY[status]
   return <span className={cn('text-[12px] font-semibold', STATUS_CLASS[status])}>{label}</span>
 }
 
@@ -53,7 +53,7 @@ export function NutrientProgress({
       type="button"
       onClick={onSelect}
       className="flex w-full items-center gap-3 rounded-2xl px-1 py-3 text-left transition active:bg-surface-2"
-      aria-label={`${info.label}: ${status === 'no-data' ? 'no data' : nutrientAmount(coverage.intake, info.unit)}${pct !== null && confirmed ? `, ${percent(pct)} of target` : ''}. ${STATUS_COPY[status]}.`}
+      aria-label={`${info.label}: ${status === 'no-data' ? 'sin datos' : nutrientAmount(coverage.intake, info.unit)}${pct !== null && confirmed ? `, ${percent(pct)} del objetivo` : ''}. ${STATUS_COPY[status]}.`}
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
@@ -75,17 +75,17 @@ export function NutrientProgress({
         </div>
         <div className="mt-1.5 flex justify-between gap-2 text-[12px] text-muted tabular">
           {status === 'no-data' ? (
-            <span>None of today's foods report {info.label.toLowerCase()}</span>
+            <span>Ningún alimento de hoy indica {info.label.charAt(0).toLowerCase() + info.label.slice(1)}</span>
           ) : (
             <>
               <span>
                 {nutrientAmount(coverage.intake, info.unit)}
-                {coverage.target ? ` of ${nutrientAmount(coverage.target, info.unit)}` : ''}
+                {coverage.target ? ` de ${nutrientAmount(coverage.target, info.unit)}` : ''}
                 {confirmed && pct !== null ? ` · ${percent(pct)}` : ''}
               </span>
               {!confirmed && (
                 <span>
-                  {coverage.reportingEntries}/{coverage.totalEntries} foods report
+                  {coverage.reportingEntries}/{coverage.totalEntries} alimentos con datos
                 </span>
               )}
             </>

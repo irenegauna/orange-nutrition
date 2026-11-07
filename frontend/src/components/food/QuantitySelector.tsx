@@ -20,7 +20,7 @@ export function QuantitySelector({
       <div className="flex items-center justify-between gap-3 rounded-2xl bg-surface-2 p-1.5">
         <button
           type="button"
-          aria-label="Decrease amount"
+          aria-label="Reducir cantidad"
           onClick={() => set(value.amount - step)}
           disabled={value.amount <= step}
           className="grid size-11 place-items-center rounded-xl bg-surface text-foreground shadow-sm transition active:scale-95 disabled:opacity-40"
@@ -28,7 +28,7 @@ export function QuantitySelector({
           <Minus className="size-4" />
         </button>
         <label className="flex min-w-0 flex-1 items-baseline justify-center gap-1.5">
-          <span className="sr-only">Amount</span>
+          <span className="sr-only">Cantidad</span>
           <input
             type="number"
             inputMode="decimal"
@@ -42,7 +42,7 @@ export function QuantitySelector({
         </label>
         <button
           type="button"
-          aria-label="Increase amount"
+          aria-label="Aumentar cantidad"
           onClick={() => set(value.amount + step)}
           className="grid size-11 place-items-center rounded-xl bg-surface text-foreground shadow-sm transition active:scale-95"
         >
@@ -50,7 +50,7 @@ export function QuantitySelector({
         </button>
       </div>
       {servings.length > 1 && (
-        <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1" role="radiogroup" aria-label="Serving size">
+        <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1" role="radiogroup" aria-label="Tamaño de la ración">
           {servings.map((s) => {
             const active = s.label === value.serving.label && s.grams === value.serving.grams
             return (
@@ -71,7 +71,7 @@ export function QuantitySelector({
                   active ? 'border-accent bg-accent text-white dark:text-background' : 'border-border bg-surface text-foreground',
                 )}
               >
-                {s.label === 'g' ? 'grams' : `${s.label}${s.grams !== 1 ? ` · ${Math.round(s.grams)} g` : ''}`}
+                {s.label === 'g' ? 'gramos' : `${s.label}${s.grams !== 1 ? ` · ${Math.round(s.grams)} g` : ''}`}
               </button>
             )
           })}

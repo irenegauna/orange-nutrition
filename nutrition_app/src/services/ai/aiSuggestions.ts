@@ -20,7 +20,8 @@ Rules:
 - Do NOT state calories or nutrient values: the app computes them from its database.
 - Respect the user's request, the calorie budget and remaining targets. The catalog is already filtered for allergies and diets.
 - Prefer realistic, simple combinations a person would actually eat, with sensible portions.
-- Give 3 to 5 varied suggestions with a short reason (max 25 words) each.`;
+- Give 3 to 5 varied suggestions with a short reason (max 25 words) each.
+- The app is in Spanish (Spain): write every suggestion name and reason in Spanish.`;
 
 const SCHEMA: GeminiSchema = {
   type: 'OBJECT',

@@ -137,7 +137,7 @@ describe('AI settings & consent', () => {
     expect(s).toMatchObject({ hasApiKey: false, photoRecognitionAvailable: false, aiSuggestionsAvailable: false });
     await expect(updateAiSettings({ photoRecognitionEnabled: true })).rejects.toMatchObject({ code: 'VALIDATION' });
     await setAiApiKey(KEY);
-    await expect(updateAiSettings({ photoRecognitionEnabled: true })).rejects.toThrow(/privacy/);
+    await expect(updateAiSettings({ photoRecognitionEnabled: true })).rejects.toThrow(/privacidad/);
     await acceptAiPrivacyNotice();
     const on = await updateAiSettings({ photoRecognitionEnabled: true });
     expect(on).toMatchObject({ photoRecognitionAvailable: true, aiSuggestionsAvailable: false, apiKeyHint: '…7890' });
@@ -312,13 +312,14 @@ describe('photo matching quality', () => {
   });
   it('requires an identifying word, so generic words ("whole", "yellow") never match on their own', async () => {
     const { matchDetectedFood } = await import('../services/ai');
-    const fish = await matchDetectedFood({ name: 'whole fish, raw', searchTerms: ['fish'], estimatedGrams: 600, confidence: 0.6, preparation: 'raw' });
-    expect(fish.some((m) => m.food.name.startsWith('Egg'))).toBe(false);
-    const squash = await matchDetectedFood({ name: 'yellow squash, raw', searchTerms: ['squash'], estimatedGrams: 200, confidence: 0.6 });
-    expect(squash.some((m) => /Tuna/.test(m.food.name))).toBe(false);
-    const bread = await matchDetectedFood({ name: 'whole wheat bread, sliced', searchTerms: ['bread'], estimatedGrams: 60, confidence: 0.8 });
-    expect(bread[0]?.food.name).toBe('Whole-wheat bread');
-    const beef = await matchDetectedFood({ name: 'beef roast, raw', searchTerms: ['beef'], estimatedGrams: 300, confidence: 0.7, preparation: 'raw' });
-    expect(beef[0]?.food.name).toMatch(/beef/i);
+    // Gemini is asked for Spanish names (the catalog is Spanish).
+    const fish = await matchDetectedFood({ name: 'pescado entero, crudo', searchTerms: ['pescado'], estimatedGrams: 600, confidence: 0.6, preparation: 'raw' });
+    expect(fish.some((m) => m.food.name.startsWith('Huevo'))).toBe(false);
+    const squash = await matchDetectedFood({ name: 'calabaza amarilla, cruda', searchTerms: ['calabaza'], estimatedGrams: 200, confidence: 0.6 });
+    expect(squash.some((m) => /Atún/.test(m.food.name))).toBe(false);
+    const bread = await matchDetectedFood({ name: 'pan integral, en rebanadas', searchTerms: ['pan'], estimatedGrams: 60, confidence: 0.8 });
+    expect(bread[0]?.food.name).toBe('Pan integral');
+    const beef = await matchDetectedFood({ name: 'ternera asada, cruda', searchTerms: ['ternera'], estimatedGrams: 300, confidence: 0.7, preparation: 'raw' });
+    expect(beef[0]?.food.name).toMatch(/ternera/i);
   });
 });

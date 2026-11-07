@@ -38,7 +38,7 @@ export function EmptyState({
 
 export function LoadingState({ rows = 3, className }: { rows?: number; className?: string }) {
   return (
-    <div className={cn('space-y-3', className)} role="status" aria-label="Loading">
+    <div className={cn('space-y-3', className)} role="status" aria-label="Cargando">
       {Array.from({ length: rows }, (_, i) => (
         <Skeleton key={i} className="h-16 w-full rounded-2xl" />
       ))}
@@ -47,27 +47,27 @@ export function LoadingState({ rows = 3, className }: { rows?: number; className
 }
 
 export function Spinner({ className }: { className?: string }) {
-  return <LoaderCircle className={cn('size-5 animate-spin text-muted', className)} aria-label="Loading" />
+  return <LoaderCircle className={cn('size-5 animate-spin text-muted', className)} aria-label="Cargando" />
 }
 
 export function ErrorState({ error, onRetry, className }: { error: unknown; onRetry?: () => void; className?: string }) {
   const unavailable = isStorageUnavailable(error)
   const offline = typeof navigator !== 'undefined' && !navigator.onLine
   const message = unavailable
-    ? 'This browser won’t let the app store data here (private browsing?). Open it in a normal Safari tab or install it to the Home Screen.'
+    ? 'Este navegador no deja que la app guarde datos aquí (¿navegación privada?). Ábrela en una pestaña normal de Safari o instálala en la pantalla de inicio.'
     : error instanceof Error
       ? error.message
-      : 'Something went wrong.'
+      : 'Algo ha ido mal.'
   return (
     <div className={cn('flex flex-col items-center rounded-3xl bg-danger/5 px-6 py-8 text-center', className)} role="alert">
       <div className="mb-3 grid size-12 place-items-center rounded-full bg-danger/10 text-danger">
         {offline ? <WifiOff className="size-5" /> : <CircleExclamationPoint className="size-5" />}
       </div>
-      <p className="text-[15px] font-semibold">{unavailable ? 'Storage unavailable' : "Couldn't load this"}</p>
+      <p className="text-[15px] font-semibold">{unavailable ? 'Almacenamiento no disponible' : 'No se ha podido cargar'}</p>
       <p className="mt-1 max-w-[32ch] text-sm leading-relaxed text-muted">{message}</p>
       {onRetry && !unavailable && (
         <Button variant="outline" size="sm" className="mt-4" onClick={onRetry}>
-          Try again
+          Reintentar
         </Button>
       )}
     </div>

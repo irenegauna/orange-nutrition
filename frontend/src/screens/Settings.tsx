@@ -31,7 +31,7 @@ export function SettingsScreen() {
   const prefs = usePreferences()
   return (
     <div className="animate-fade-up pb-4">
-      <PageHeader title="Settings" emoji="⚙️" back />
+      <PageHeader title="Ajustes" emoji="⚙️" back />
       {goals.isError || prefs.isError ? (
         <ErrorState error={goals.error ?? prefs.error} onRetry={() => (goals.refetch(), prefs.refetch())} />
       ) : !goals.data || !prefs.data ? (
@@ -60,7 +60,14 @@ function Group({ title, description, children, id }: { title: string; descriptio
   )
 }
 
-const DIETS = ['Vegetarian', 'Vegan', 'Pescatarian', 'Gluten-free', 'Dairy-free']
+/** Ids are stored in preferences (and read by the backend) — keep them in English. */
+const DIETS: { id: string; label: string }[] = [
+  { id: 'vegetarian', label: 'Vegetariana' },
+  { id: 'vegan', label: 'Vegana' },
+  { id: 'pescatarian', label: 'Pescetariana' },
+  { id: 'gluten-free', label: 'Sin gluten' },
+  { id: 'dairy-free', label: 'Sin lácteos' },
+]
 
 function PreferencesSection({ prefs }: { prefs: Preferences }) {
   const update = useUpdatePreferences()
@@ -70,42 +77,41 @@ function PreferencesSection({ prefs }: { prefs: Preferences }) {
   }, [prefs.theme])
   const dirty = JSON.stringify({ ...draft, theme: null }) !== JSON.stringify({ ...prefs, theme: null })
 
-  const toggleDiet = (d: string) => {
-    const k = d.toLowerCase()
+  const toggleDiet = (k: string) => {
     setDraft({ ...draft, dietary: draft.dietary.includes(k) ? draft.dietary.filter((x) => x !== k) : [...draft.dietary, k] })
   }
 
   return (
-    <Group title="🥗 Food preferences" description="Used to filter recommendations.">
+    <Group title="🥗 Preferencias alimentarias" description="Se usan para filtrar las recomendaciones.">
       <div className="space-y-1.5">
-        <Label htmlFor="pref-name">Your name (for the greeting)</Label>
+        <Label htmlFor="pref-name">Tu nombre (para el saludo)</Label>
         <Input id="pref-name" value={draft.displayName ?? ''} maxLength={30} onChange={(e) => setDraft({ ...draft, displayName: e.target.value })} />
       </div>
       <div>
-        <p className="mb-2 text-[13px] font-medium text-muted">Dietary preferences</p>
+        <p className="mb-2 text-[13px] font-medium text-muted">Tipo de dieta</p>
         <div className="flex flex-wrap gap-2">
           {DIETS.map((d) => {
-            const on = draft.dietary.includes(d.toLowerCase())
+            const on = draft.dietary.includes(d.id)
             return (
               <button
-                key={d}
+                key={d.id}
                 type="button"
                 aria-pressed={on}
-                onClick={() => toggleDiet(d)}
+                onClick={() => toggleDiet(d.id)}
                 className={cn(
                   'h-10 rounded-full border px-4 text-[13px] font-medium transition',
                   on ? 'border-accent bg-accent text-white dark:text-background' : 'border-border bg-surface',
                 )}
               >
-                {d}
+                {d.label}
               </button>
             )
           })}
         </div>
       </div>
       <div>
-        <p className="mb-1 text-[13px] font-medium text-muted">Allergies</p>
-        <p className="mb-2 text-[12px] text-muted">The 14 EU allergens. Foods without confirmed allergen info are excluded while any is selected.</p>
+        <p className="mb-1 text-[13px] font-medium text-muted">Alergias</p>
+        <p className="mb-2 text-[12px] text-muted">Los 14 alérgenos de la UE. Si marcas alguno, se excluyen los alimentos sin información de alérgenos confirmada.</p>
         <div className="flex flex-wrap gap-2">
           {ALLERGENS.map((a) => {
             const on = draft.allergies.includes(a.id)
@@ -128,20 +134,20 @@ function PreferencesSection({ prefs }: { prefs: Preferences }) {
           })}
         </div>
       </div>
-      <ChipInput label="Disliked foods" placeholder="e.g. olives" values={draft.dislikedFoods} onChange={(dislikedFoods) => setDraft({ ...draft, dislikedFoods })} />
+      <ChipInput label="Alimentos que no te gustan" placeholder="p. ej. aceitunas" values={draft.dislikedFoods} onChange={(dislikedFoods) => setDraft({ ...draft, dislikedFoods })} />
       <Button
         className="w-full"
         disabled={!dirty || update.isPending}
         onClick={async () => {
           try {
             await update.mutateAsync({ ...draft, displayName: draft.displayName?.trim() || undefined })
-            toast.success('Preferences saved')
+            toast.success('Preferencias guardadas')
           } catch (err) {
-            toast.error(err instanceof Error ? err.message : 'Could not save')
+            toast.error(err instanceof Error ? err.message : 'No se ha podido guardar')
           }
         }}
       >
-        Save preferences
+        Guardar preferencias
       </Button>
     </Group>
   )
@@ -167,7 +173,7 @@ function ChipInput({ label, placeholder, values, onChange }: { label: string; pl
       <div className="flex gap-2">
         <Input id={id} placeholder={placeholder} value={text} enterKeyHint="done" onChange={(e) => setText(e.target.value)} onKeyDown={onKey} />
         <Button variant="soft" onClick={add} disabled={!text.trim()}>
-          Add
+          Añadir
         </Button>
       </div>
       {values.length > 0 && (
@@ -175,7 +181,7 @@ function ChipInput({ label, placeholder, values, onChange }: { label: string; pl
           {values.map((v) => (
             <li key={v} className="flex h-9 items-center gap-1 rounded-full bg-surface-2 pl-3.5 text-[13px] font-medium">
               {v}
-              <button type="button" aria-label={`Remove ${v}`} onClick={() => onChange(values.filter((x) => x !== v))} className="grid size-9 place-items-center text-muted">
+              <button type="button" aria-label={`Quitar ${v}`} onClick={() => onChange(values.filter((x) => x !== v))} className="grid size-9 place-items-center text-muted">
                 <X className="size-3.5" />
               </button>
             </li>
@@ -189,15 +195,15 @@ function ChipInput({ label, placeholder, values, onChange }: { label: string; pl
 function ThemeSection({ prefs }: { prefs: Preferences }) {
   const update = useUpdatePreferences()
   return (
-    <Group title="🎨 Appearance">
+    <Group title="🎨 Apariencia">
       <SegmentedControl<ThemePreference>
-        label="Theme"
+        label="Tema"
         value={prefs.theme}
-        onChange={(theme) => update.mutate({ ...prefs, theme }, { onSuccess: () => toast.success('Theme updated') })}
+        onChange={(theme) => update.mutate({ ...prefs, theme }, { onSuccess: () => toast.success('Tema actualizado') })}
         options={[
-          { value: 'system', label: 'System', icon: <Monitor className="size-4" /> },
-          { value: 'light', label: 'Light', icon: <Sun className="size-4" /> },
-          { value: 'dark', label: 'Dark', icon: <Moon className="size-4" /> },
+          { value: 'system', label: 'Sistema', icon: <Monitor className="size-4" /> },
+          { value: 'light', label: 'Claro', icon: <Sun className="size-4" /> },
+          { value: 'dark', label: 'Oscuro', icon: <Moon className="size-4" /> },
         ]}
       />
     </Group>
@@ -223,9 +229,9 @@ function DataSection() {
       a.click()
       a.remove()
       setTimeout(() => URL.revokeObjectURL(url), 1000)
-      toast.success('Backup exported')
+      toast.success('Copia de seguridad exportada')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Export failed')
+      toast.error(err instanceof Error ? err.message : 'Error al exportar')
     } finally {
       setExporting(false)
     }
@@ -239,45 +245,45 @@ function DataSection() {
       const parsed = JSON.parse(await f.text())
       const v = await api.backup.validate(parsed)
       if (!v.ok) {
-        toast.error(v.error ?? 'Invalid backup file')
+        toast.error(v.error ?? 'Archivo de copia de seguridad no válido')
         return
       }
       setPending({ file: parsed, v })
     } catch {
-      toast.error("That file isn't valid JSON")
+      toast.error('Ese archivo no es un JSON válido')
     }
   }
 
   return (
-    <Group title="💾 Your data" description="Everything is stored only on this device. Export a backup to keep it safe or move it to another device.">
+    <Group title="💾 Tus datos" description="Todo se guarda solo en este dispositivo. Exporta una copia de seguridad para no perderlo o pasarlo a otro dispositivo.">
       <div className="grid grid-cols-2 gap-3">
         <Button variant="outline" onClick={doExport} disabled={exporting}>
-          <Download className="size-4" /> Export
+          <Download className="size-4" /> Exportar
         </Button>
         <Button variant="outline" onClick={() => fileRef.current?.click()}>
-          <Upload className="size-4" /> Import
+          <Upload className="size-4" /> Importar
         </Button>
       </div>
       <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={onFile} />
       <ConfirmDialog
         open={!!pending}
         onOpenChange={(o) => !o && setPending(null)}
-        title="Replace all data?"
+        title="¿Reemplazar todos los datos?"
         description={
           pending?.v.summary
-            ? `This backup from ${new Date(pending.v.summary.exportedAt).toLocaleDateString()} has ${pending.v.summary.entries} diary entries, ${pending.v.summary.foods} custom foods and ${pending.v.summary.recipes} recipes. Your current data on this device will be replaced.`
-            : 'Your current data on this device will be replaced.'
+            ? `Esta copia del ${new Date(pending.v.summary.exportedAt).toLocaleDateString('es-ES')} tiene ${pending.v.summary.entries} registros del diario, ${pending.v.summary.foods} alimentos propios y ${pending.v.summary.recipes} recetas. Se reemplazarán los datos actuales de este dispositivo.`
+            : 'Se reemplazarán los datos actuales de este dispositivo.'
         }
-        confirmLabel="Import"
+        confirmLabel="Importar"
         destructive
         busy={importer.isPending}
         onConfirm={async () => {
           try {
             await importer.mutateAsync(pending!.file)
-            toast.success('Backup imported')
+            toast.success('Copia de seguridad importada')
             setPending(null)
           } catch (err) {
-            toast.error(err instanceof Error ? err.message : 'Import failed')
+            toast.error(err instanceof Error ? err.message : 'Error al importar')
           }
         }}
       />
@@ -288,19 +294,19 @@ function DataSection() {
 function InstallSection() {
   const standalone = typeof window !== 'undefined' && (window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone)
   return (
-    <Group title="📱 Install on iPhone">
+    <Group title="📱 Instalar en el iPhone">
       {standalone ? (
-        <p className="text-[15px]">You're using Nourish as an installed app.</p>
+        <p className="text-[15px]">Estás usando Orange Nutrition como app instalada.</p>
       ) : (
         <ol className="space-y-2.5 text-[15px]">
           {[
-            'Open this page in Safari.',
+            'Abre esta página en Safari.',
             <>
-              Tap <Share className="inline size-4 -translate-y-0.5" /> Share.
+              Toca <Share className="inline size-4 -translate-y-0.5" /> Compartir.
             </>,
-            'Choose “Add to Home Screen”.',
-            'Make sure “Open as Web App” is on.',
-            'Tap Add.',
+            'Elige «Añadir a pantalla de inicio».',
+            'Comprueba que «Abrir como app web» está activado.',
+            'Toca Añadir.',
           ].map((s, i) => (
             <li key={i} className="flex gap-3">
               <span className="grid size-6 shrink-0 place-items-center rounded-full bg-soft text-[12px] font-semibold text-accent">{i + 1}</span>
@@ -334,18 +340,18 @@ function AiSection() {
       await fn()
       if (ok) toast.success(ok)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Something went wrong')
+      toast.error(err instanceof Error ? err.message : 'Algo ha ido mal')
     }
   }
 
   return (
     <Group
       id="ai"
-      title="✨ AI with Gemini"
-      description="Optional. Powers the chat assistant and meal-photo recognition. Uses your own free Google Gemini API key, stored only on this device."
+      title="✨ IA con Gemini"
+      description="Opcional. Activa el asistente de chat y el reconocimiento de fotos de comidas. Usa tu propia clave de API de Google Gemini (gratuita), guardada solo en este dispositivo."
     >
       {!s ? (
-        <p className="text-sm text-muted">Loading…</p>
+        <p className="text-sm text-muted">Cargando…</p>
       ) : (
         <>
           <div className="flex items-start gap-3">
@@ -354,23 +360,23 @@ function AiSection() {
             </div>
             <p className="text-[14px] leading-relaxed">
               {s.assistantAvailable || s.photoAvailable
-                ? [s.assistantAvailable && 'The Assistant tab is chatting with Gemini.', s.photoAvailable && 'You can log meals from a photo in Add Food → Photo.']
+                ? [s.assistantAvailable && 'La pestaña Ideas usa Gemini para chatear.', s.photoAvailable && 'Puedes registrar comidas con una foto en Añadir comida → Foto.']
                     .filter(Boolean)
                     .join(' ')
-                : 'Turn these on to chat with Gemini in the Assistant tab and to log meals from a photo. Without them, everything else works as usual.'}
+                : 'Actívalos para chatear con Gemini en la pestaña Ideas y registrar comidas con una foto. Sin ellos, todo lo demás funciona igual.'}
             </p>
           </div>
 
           {/* 1. API key */}
           <div className="space-y-1.5">
-            <Label htmlFor="ai-key">API key</Label>
+            <Label htmlFor="ai-key">Clave de API</Label>
             {s.hasApiKey ? (
               <div className="flex items-center gap-2">
                 <div className="flex h-12 flex-1 items-center gap-2 rounded-2xl border border-border bg-surface-2 px-4 text-sm">
-                  <KeyRound className="size-4 text-muted" /> Saved key {s.apiKeyHint}
+                  <KeyRound className="size-4 text-muted" /> Clave guardada {s.apiKeyHint}
                 </div>
-                <Button variant="outline" onClick={() => run(() => setKey.mutateAsync(null), 'API key removed')}>
-                  Remove
+                <Button variant="outline" onClick={() => run(() => setKey.mutateAsync(null), 'Clave de API eliminada')}>
+                  Quitar
                 </Button>
               </div>
             ) : (
@@ -381,15 +387,15 @@ function AiSection() {
                     type="password"
                     autoComplete="off"
                     spellCheck={false}
-                    placeholder="Paste your Gemini API key"
+                    placeholder="Pega tu clave de API de Gemini"
                     value={key}
                     onChange={(e) => setKeyInput(e.target.value)}
                   />
                   <Button
                     disabled={key.trim().length < 10 || setKey.isPending}
-                    onClick={() => run(async () => (await setKey.mutateAsync(key.trim()), setKeyInput('')), 'API key saved')}
+                    onClick={() => run(async () => (await setKey.mutateAsync(key.trim()), setKeyInput('')), 'Clave de API guardada')}
                   >
-                    Save
+                    Guardar
                   </Button>
                 </div>
                 <a
@@ -398,7 +404,7 @@ function AiSection() {
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 text-[13px] font-medium text-accent"
                 >
-                  Get a free key at Google AI Studio <ExternalLink className="size-3.5" />
+                  Consigue una clave gratis en Google AI Studio <ExternalLink className="size-3.5" />
                 </a>
               </>
             )}
@@ -407,17 +413,17 @@ function AiSection() {
           {/* 2. Privacy notice */}
           {s.hasApiKey && !s.consentAccepted && (
             <div className="space-y-3 rounded-2xl bg-soft p-4">
-              <p className="text-[14px] font-medium">Before turning AI on</p>
+              <p className="text-[14px] font-medium">Antes de activar la IA</p>
               <p className="whitespace-pre-line text-[13px] leading-relaxed text-foreground/80">
                 {showNotice ? s.privacyNotice : s.privacyNotice.split('\n').slice(0, 2).join('\n')}
               </p>
               {!showNotice && (
                 <button type="button" className="text-[13px] font-medium text-accent" onClick={() => setShowNotice(true)}>
-                  Read the full notice
+                  Leer el aviso completo
                 </button>
               )}
-              <Button className="w-full" disabled={accept.isPending} onClick={() => run(() => accept.mutateAsync(), 'Thanks — you can now turn the assistant on')}>
-                I understand, continue
+              <Button className="w-full" disabled={accept.isPending} onClick={() => run(() => accept.mutateAsync(), 'Gracias, ya puedes activar el asistente')}>
+                Entendido, continuar
               </Button>
             </div>
           )}
@@ -426,17 +432,17 @@ function AiSection() {
           {s.hasApiKey && s.consentAccepted && (
             <>
               <Switch
-                label="Use Gemini in the Assistant"
+                label="Usar Gemini en el asistente"
                 checked={s.assistantEnabled}
                 disabled={setEnabled.isPending}
                 onChange={(v) => run(() => setEnabled.mutateAsync(v))}
               />
               <Switch
-                label="📸 Recognise meals from photos"
-                hint="Add Food → Photo. The photo is sent to Google; Gemini only names foods and estimates grams — nutrition comes from the food database."
+                label="📸 Reconocer comidas en fotos"
+                hint="Añadir comida → Foto. La foto se envía a Google; Gemini solo identifica los alimentos y estima los gramos: los valores nutricionales salen de la base de datos de alimentos."
                 checked={s.photoEnabled}
                 disabled={setPhoto.isPending}
-                onChange={(v) => run(() => setPhoto.mutateAsync(v), v ? 'Photo recognition on' : undefined)}
+                onChange={(v) => run(() => setPhoto.mutateAsync(v), v ? 'Reconocimiento de fotos activado' : undefined)}
               />
               <div className="flex gap-2">
                 <Button
@@ -444,21 +450,21 @@ function AiSection() {
                   className="flex-1"
                   disabled={test.isPending}
                   onClick={async () => {
-                    const r = await test.mutateAsync().catch((e: unknown) => ({ ok: false, message: e instanceof Error ? e.message : 'Failed' }))
+                    const r = await test.mutateAsync().catch((e: unknown) => ({ ok: false, message: e instanceof Error ? e.message : 'Ha fallado' }))
                     if (r.ok) toast.success(r.message)
                     else toast.error(r.message)
                   }}
                 >
-                  {test.isPending ? 'Testing…' : 'Test connection'}
+                  {test.isPending ? 'Probando…' : 'Probar conexión'}
                 </Button>
-                <Button variant="outline" className="flex-1" onClick={() => run(() => revoke.mutateAsync(false), 'AI turned off')}>
-                  Turn AI off
+                <Button variant="outline" className="flex-1" onClick={() => run(() => revoke.mutateAsync(false), 'IA desactivada')}>
+                  Desactivar IA
                 </Button>
               </div>
               <p className="text-[12.5px] leading-relaxed text-muted">
-                Chat: your messages, today's diary and 7-day nutrient averages are sent to Google to answer. Photos: only the downscaled image (and
-                your optional note) is sent. Google's free tier may use them to improve
-                its products. Nutrition numbers on meal cards always come from the app's food database.
+                Chat: para responder, se envían a Google tus mensajes, tu diario de hoy y las medias de nutrientes de 7 días. Fotos: solo se envía la
+                imagen reducida (y tu nota opcional). En el plan gratuito, Google puede usarlos para mejorar sus productos. Los valores
+                nutricionales de las propuestas de platos siempre salen de la base de datos de alimentos de la app.
               </p>
             </>
           )}

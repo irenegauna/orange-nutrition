@@ -5,10 +5,10 @@ import { cn } from '@/lib/utils'
 /** Compact kcal + macro grid for a food, recipe or recommendation. */
 export function NutritionCard({ nutrition, className, label }: { nutrition: Macros; className?: string; label?: string }) {
   const cells = [
-    { k: 'Protein', v: nutrition.protein, c: 'bg-protein' },
-    { k: 'Carbs', v: nutrition.carbs, c: 'bg-carbs' },
-    { k: 'Fat', v: nutrition.fat, c: 'bg-fat' },
-    { k: 'Fiber', v: nutrition.fiber, c: 'bg-fiber' },
+    { k: 'Proteínas', v: nutrition.protein, c: 'bg-protein' },
+    { k: 'Hidratos', v: nutrition.carbs, c: 'bg-carbs' },
+    { k: 'Grasas', v: nutrition.fat, c: 'bg-fat' },
+    { k: 'Fibra', v: nutrition.fiber, c: 'bg-fiber' },
   ]
   return (
     <div className={cn('rounded-2xl bg-surface-2/70 p-4', className)}>

@@ -35,19 +35,19 @@ interface Band {
 /** Adult age bands, oldest first so the first match wins. */
 const BANDS: Record<Sex, Band[]> = {
   female: [
-    { minAge: 70, label: 'Women 70+', micros: { ...WOMAN, thiamin: 1.0, vitaminB6: 1.5, vitaminK: 90, vitaminD: 15, calcium: 1000, iron: 9, magnesium: 280, zinc: 7, copper: 1.2 } },
-    { minAge: 60, label: 'Women 60–69', micros: { ...WOMAN, thiamin: 1.0, vitaminB6: 1.5, vitaminK: 90, calcium: 1000, iron: 9, magnesium: 280, copper: 1.2 } },
-    { minAge: 50, label: 'Women 50–59', micros: { ...WOMAN, iron: 15 } },
-    { minAge: 20, label: 'Women 20–49', micros: WOMAN },
+    { minAge: 70, label: 'Mujeres 70+', micros: { ...WOMAN, thiamin: 1.0, vitaminB6: 1.5, vitaminK: 90, vitaminD: 15, calcium: 1000, iron: 9, magnesium: 280, zinc: 7, copper: 1.2 } },
+    { minAge: 60, label: 'Mujeres 60–69', micros: { ...WOMAN, thiamin: 1.0, vitaminB6: 1.5, vitaminK: 90, calcium: 1000, iron: 9, magnesium: 280, copper: 1.2 } },
+    { minAge: 50, label: 'Mujeres 50–59', micros: { ...WOMAN, iron: 15 } },
+    { minAge: 20, label: 'Mujeres 20–49', micros: WOMAN },
     // AESAN 14-19 band; only 18-19 year-olds reach it here (adults only).
-    { minAge: 18, label: 'Women 18–19', micros: { ...WOMAN, niacin: 15, vitaminB6: 1.2, vitaminK: 65, calcium: 1150, phosphorus: 800, iron: 15, zinc: 9, copper: 1.0, selenium: 60 } },
+    { minAge: 18, label: 'Mujeres 18–19', micros: { ...WOMAN, niacin: 15, vitaminB6: 1.2, vitaminK: 65, calcium: 1150, phosphorus: 800, iron: 15, zinc: 9, copper: 1.0, selenium: 60 } },
   ],
   male: [
-    { minAge: 70, label: 'Men 70+', micros: { ...MAN, niacin: 16, riboflavin: 1.4, vitaminK: 80, vitaminD: 15, calcium: 1000, selenium: 60 } },
-    { minAge: 60, label: 'Men 60–69', micros: { ...MAN, niacin: 16, vitaminK: 80, calcium: 1000 } },
-    { minAge: 50, label: 'Men 50–59', micros: { ...MAN, vitaminK: 80 } },
-    { minAge: 20, label: 'Men 20–49', micros: MAN },
-    { minAge: 18, label: 'Men 18–19', micros: { ...MAN, vitaminB6: 1.5, calcium: 1150, phosphorus: 800, iron: 11, selenium: 60 } },
+    { minAge: 70, label: 'Hombres 70+', micros: { ...MAN, niacin: 16, riboflavin: 1.4, vitaminK: 80, vitaminD: 15, calcium: 1000, selenium: 60 } },
+    { minAge: 60, label: 'Hombres 60–69', micros: { ...MAN, niacin: 16, vitaminK: 80, calcium: 1000 } },
+    { minAge: 50, label: 'Hombres 50–59', micros: { ...MAN, vitaminK: 80 } },
+    { minAge: 20, label: 'Hombres 20–49', micros: MAN },
+    { minAge: 18, label: 'Hombres 18–19', micros: { ...MAN, vitaminB6: 1.5, calcium: 1150, phosphorus: 800, iron: 11, selenium: 60 } },
   ],
 };
 

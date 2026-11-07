@@ -96,7 +96,7 @@ export async function getFoodByBarcode(barcode: string): Promise<Food | null> {
     case 'not_found':
       return null;
     case 'invalid':
-      throw new DataError('VALIDATION', `"${barcode}" is not a valid barcode`);
+      throw new DataError('VALIDATION', `"${barcode}" no es un código de barras válido`);
     case 'error':
       throw new DataError('UNAVAILABLE', r.message, { code: r.code });
   }
@@ -105,7 +105,7 @@ export async function getFoodByBarcode(barcode: string): Promise<Food | null> {
 /** Manual-entry fallback: saves a user food bound to the barcode (wins over OFF on next scan). */
 export async function createFoodForBarcode(barcode: string, input: Omit<CustomFoodInput, 'barcode'>): Promise<Food> {
   const code = normalizeBarcode(barcode);
-  if (!code) throw new DataError('VALIDATION', `"${barcode}" is not a valid barcode`);
+  if (!code) throw new DataError('VALIDATION', `"${barcode}" no es un código de barras válido`);
   return createCustomFood({ ...input, barcode: code });
 }
 

@@ -38,7 +38,7 @@ describe('computePersonalTargets', () => {
     expect(t.targets.fiber!.amount).toBe(25);
     expect(t.targets.sodium).toMatchObject({ amount: 2000, direction: 'atMost' });
     expect(t.targets.iron!.amount).toBe(18);
-    expect(t.breakdown.micronutrientReference).toMatch(/Women 20–49/);
+    expect(t.breakdown.micronutrientReference).toMatch(/Mujeres 20–49/);
     expect(t.breakdown.carbPercentEnergy).toBeGreaterThanOrEqual(45);
     expect(t.breakdown.carbPercentEnergy).toBeLessThanOrEqual(60);
   });
@@ -75,7 +75,7 @@ describe('computePersonalTargets', () => {
   it('does not set a deficit when BMI < 18.5', () => {
     const t = computePersonalTargets(profile({ objective: 'lose', weightKg: 45 }), D);
     expect(t.breakdown.adjustmentKcal).toBe(0);
-    expect(t.breakdown.warnings[0]).toMatch(/BMI/);
+    expect(t.breakdown.warnings[0]).toMatch(/IMC/);
   });
 
   it('rejects minors', () => {
@@ -85,7 +85,7 @@ describe('computePersonalTargets', () => {
   it('uses AESAN men values for men', () => {
     const t = computePersonalTargets(profile({ sex: 'male', heightCm: 180, weightKg: 78, birthYear: 1990 }), D);
     expect(t.targets.iron!.amount).toBe(9.1);
-    expect(t.breakdown.micronutrientReference).toMatch(/Men 20–49/);
+    expect(t.breakdown.micronutrientReference).toMatch(/Hombres 20–49/);
   });
 });
 

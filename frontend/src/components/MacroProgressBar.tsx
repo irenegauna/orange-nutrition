@@ -39,7 +39,7 @@ export function MacroProgressBar({
   // Protein and fiber are "at least" goals: going past them is good news, not "over".
   const isMinimum = tone === 'protein' || tone === 'fiber'
   const status =
-    remaining >= 0 ? `${grams(remaining)} g left` : isMinimum ? '🎉 Goal met' : `${grams(-remaining)} g over`
+    remaining >= 0 ? `Quedan ${grams(remaining)} g` : isMinimum ? '🎉 Objetivo cumplido' : `${grams(-remaining)} g de más`
   return (
     <div className="min-w-0">
       <div className="flex items-baseline justify-between gap-2">

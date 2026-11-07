@@ -7,7 +7,7 @@ export function PwaUpdater() {
   const { offlineReady: [offlineReady, setOfflineReady] } = useRegisterSW({ immediate: true })
   useEffect(() => {
     if (offlineReady) {
-      toast.success('Ready to use offline')
+      toast.success('Lista para usar sin conexión')
       setOfflineReady(false)
     }
   }, [offlineReady, setOfflineReady])

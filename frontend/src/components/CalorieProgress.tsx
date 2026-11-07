@@ -37,11 +37,11 @@ export function CalorieProgress({ consumed, target, size = 176 }: { consumed: nu
       <div
         className="absolute inset-0 flex flex-col items-center justify-center text-center"
         role="img"
-        aria-label={`${kcal(consumed)} of ${kcal(target)} calories consumed, ${kcal(Math.abs(remaining))} ${remaining >= 0 ? 'remaining' : 'over'}`}
+        aria-label={`${kcal(consumed)} de ${kcal(target)} calorías consumidas, ${remaining >= 0 ? 'quedan' : 'te has pasado'} ${kcal(Math.abs(remaining))}`}
       >
         <span aria-hidden className="emoji mb-1 text-[22px]">{over ? '😬' : '🔥'}</span>
         <span className="tabular text-[40px] font-semibold leading-none tracking-tight">{kcal(Math.abs(remaining))}</span>
-        <span className="mt-1.5 text-[13px] font-medium text-muted">{remaining >= 0 ? 'kcal remaining' : 'kcal over'}</span>
+        <span className="mt-1.5 text-[13px] font-medium text-muted">{remaining >= 0 ? 'kcal restantes' : 'kcal de más'}</span>
       </div>
     </div>
   )

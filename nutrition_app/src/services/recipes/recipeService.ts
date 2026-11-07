@@ -134,10 +134,10 @@ export interface LogRecipeInput {
 export async function logRecipe(recipeId: string, input: LogRecipeInput): Promise<MealEntry> {
   assertLocalDate(input.date);
   const recipe = await recipeRepository.getOrThrow(recipeId);
-  if (recipe.ingredients.length === 0) throw new DataError('VALIDATION', 'Cannot log a recipe without ingredients');
+  if (recipe.ingredients.length === 0) throw new DataError('VALIDATION', 'No se puede registrar una receta sin ingredientes');
   const n = await getRecipeNutrition(recipe);
   const servings = input.servings ?? 1;
-  if (!(servings > 0)) throw new DataError('VALIDATION', 'servings must be > 0');
+  if (!(servings > 0)) throw new DataError('VALIDATION', 'Las raciones deben ser más de 0');
   const servingId = `${recipe.id}_serving`;
   const now = nowIso();
   return mealEntryRepository.add({

@@ -7,7 +7,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/States'
 import { useFavoriteFoods, useFoodSearch, useRecentFoods } from '@/services/queries'
 import { Emoji, foodEmoji } from '@/lib/emoji'
 
-export const foodDetail = (f: Food) => [f.brand, 'per 100 g'].filter(Boolean).join(' · ')
+export const foodDetail = (f: Food) => [f.brand, 'por 100 g'].filter(Boolean).join(' · ')
 
 export function FoodList({ foods, onSelect }: { foods: Food[]; onSelect: (f: Food) => void }) {
   return (
@@ -40,17 +40,17 @@ export function SearchTab({ meal, date }: { meal: MealType; date: string }) {
           ) : results.data.length === 0 ? (
             <EmptyState
               emoji="🔎"
-              title={`No results for “${q}”`}
-              message="Try a simpler term, scan the barcode, or create a custom food."
+              title={`Sin resultados para «${q}»`}
+              message="Prueba con un término más sencillo, escanea el código de barras o crea un alimento propio."
             />
           ) : (
-            <Section title={`${results.data.length} result${results.data.length > 1 ? 's' : ''}`}>
+            <Section title={`${results.data.length} resultado${results.data.length > 1 ? 's' : ''}`}>
               <FoodList foods={results.data} onSelect={setSelected} />
             </Section>
           )
         ) : (
           <div className="space-y-6">
-            <Section title="Favorites" icon={<Emoji>⭐</Emoji>}>
+            <Section title="Favoritos" icon={<Emoji>⭐</Emoji>}>
               {favorites.isError ? (
                 <ErrorState error={favorites.error} />
               ) : !favorites.data ? (
@@ -58,10 +58,10 @@ export function SearchTab({ meal, date }: { meal: MealType; date: string }) {
               ) : favorites.data.length ? (
                 <FoodList foods={favorites.data} onSelect={setSelected} />
               ) : (
-                <p className="py-3 text-sm text-muted">Tap the star on any food to keep it here.</p>
+                <p className="py-3 text-sm text-muted">Toca la estrella de cualquier alimento para tenerlo aquí.</p>
               )}
             </Section>
-            <Section title="Recent" icon={<Emoji>🕘</Emoji>}>
+            <Section title="Recientes" icon={<Emoji>🕘</Emoji>}>
               {recent.isError ? (
                 <ErrorState error={recent.error} />
               ) : !recent.data ? (
@@ -69,7 +69,7 @@ export function SearchTab({ meal, date }: { meal: MealType; date: string }) {
               ) : recent.data.length ? (
                 <FoodList foods={recent.data} onSelect={setSelected} />
               ) : (
-                <p className="py-3 text-sm text-muted">Foods you log will appear here for quick access.</p>
+                <p className="py-3 text-sm text-muted">Los alimentos que registres aparecerán aquí para acceder rápido.</p>
               )}
             </Section>
           </div>
