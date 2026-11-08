@@ -6,12 +6,14 @@ export function FoodSearchInput({
   onDebouncedChange,
   autoFocus,
   placeholder = 'Buscar alimentos',
+  defaultValue = '',
 }: {
   onDebouncedChange: (q: string) => void
   autoFocus?: boolean
   placeholder?: string
+  defaultValue?: string
 }) {
-  const [value, setValue] = useState('')
+  const [value, setValue] = useState(defaultValue)
   useEffect(() => {
     const t = setTimeout(() => onDebouncedChange(value.trim()), 200)
     return () => clearTimeout(t)

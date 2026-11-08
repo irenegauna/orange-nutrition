@@ -147,6 +147,10 @@ export function useSaveRecipe() {
   return useMutation({ mutationFn: (d: RecipeDraft) => api.recipes.save(d), onSuccess: () => qc.invalidateQueries({ queryKey: qk.recipes }) })
 }
 
+export const useRecipesForDish = (foodId: string | null) =>
+  useQuery({ queryKey: ['recipes', 'dish', foodId], queryFn: () => api.recipes.forDish(foodId!), enabled: !!foodId })
+export const useDraftRecipeWithAI = () => useMutation({ mutationFn: (i: { dish: string; servings?: number }) => api.recipes.draftWithAI(i) })
+
 export function useDeleteRecipe() {
   const qc = useQueryClient()
   return useMutation({ mutationFn: (id: string) => api.recipes.delete(id), onSuccess: () => qc.invalidateQueries({ queryKey: qk.recipes }) })

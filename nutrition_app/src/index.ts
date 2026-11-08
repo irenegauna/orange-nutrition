@@ -30,6 +30,8 @@ export {
 export { NutritionDB, getDb, setDb, deleteDatabase, requestPersistentStorage, getStorageEstimate, type FoodRecord } from './data/db';
 export { CURRENT_DB_VERSION } from './data/migrations';
 export { seedDatabase, SEED_FOODS, type SeedResult } from './data/seed';
+export { seedClassicRecipes, classicRecipeId, type ClassicSeedResult, type ClassicRecipeDef } from './data/seed/classicRecipes';
+export { CLASSIC_RECIPES, CLASSIC_RECIPES_VERSION } from './data/seed/classicRecipesData';
 export { nutrientDefinitionRepository } from './data/repositories';
 export * from './services';
 export { OpenFoodFactsClient, OpenFoodFactsError, normalizeOffProduct, normalizeOffNutrients, type OffClientOptions, type OffErrorCode } from './integrations/openFoodFacts';

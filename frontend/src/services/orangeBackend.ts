@@ -296,7 +296,13 @@ async function recipeToUI(r: B.Recipe): Promise<Recipe> {
       foodId: i.foodId,
       foodName: i.snapshot.name,
       quantity: quantityToUI(i.quantity, i.snapshot.servings, i.grams),
+      ...(i.note ? { note: i.note } : {}),
     })),
+    builtin: !!r.builtin,
+    instructions: r.instructions,
+    ...(r.prepTimeMinutes !== undefined || r.cookTimeMinutes !== undefined ? { prepMinutes: (r.prepTimeMinutes ?? 0) + (r.cookTimeMinutes ?? 0) } : {}),
+    tags: r.tags,
+    ...(r.dishFoodId ? { dishFoodId: r.dishFoodId } : {}),
     nutrition: recipeNutritionToUI(n),
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
@@ -807,21 +813,49 @@ export const orangeBackend: NutritionBackend = {
       return recipeNutritionToUI(B.calculateRecipeNutrition({ id: 'draft', servings: Math.max(draft.servings, 1), ingredients }, foods))
     },
     async save(draft: RecipeDraft) {
-      const ingredients = draft.ingredients.map((i) => ({ foodId: i.foodId, quantity: toBackendQuantity(i.quantity) }))
+      const ingredients = draft.ingredients.map((i) => ({ foodId: i.foodId, quantity: toBackendQuantity(i.quantity), ...(i.note ? { note: i.note } : {}) }))
       let saved: B.Recipe
       if (draft.id) {
-        await B.updateRecipe(draft.id, { name: draft.name, servings: draft.servings })
+        await B.updateRecipe(draft.id, { name: draft.name, servings: draft.servings, ...(draft.instructions ? { instructions: draft.instructions } : {}) })
         const existing = await B.getRecipe(draft.id)
         for (const ing of existing?.ingredients ?? []) await B.removeIngredient(draft.id, ing.id)
         for (const ing of ingredients) await B.addIngredient(draft.id, ing)
         saved = (await B.getRecipe(draft.id))!
       } else {
-        saved = await B.createRecipe({ name: draft.name, servings: draft.servings, ingredients })
+        saved = await B.createRecipe({
+          name: draft.name,
+          servings: draft.servings,
+          ingredients,
+          ...(draft.instructions?.length ? { instructions: draft.instructions } : {}),
+          ...(draft.dishFoodId ? { dishFoodId: draft.dishFoodId } : {}),
+        })
       }
       return recipeToUI(saved)
     },
     async delete(id: string) {
       await B.deleteRecipe(id)
+    },
+    async forDish(foodId: string) {
+      return Promise.all((await B.getRecipesForDish(foodId)).map(recipeToUI))
+    },
+    async draftWithAI({ dish, servings }: { dish: string; servings?: number }) {
+      let d: B.AiRecipeDraft
+      try {
+        d = await B.draftRecipeWithAI({ dish, ...(servings ? { servings } : {}) })
+      } catch (e) {
+        if (e instanceof B.DataError && e.code === 'VALIDATION') throw new Error(e.message)
+        throw aiErrorMessage(e, 'No se ha podido crear la receta')
+      }
+      const foods = await B.getFoods(d.ingredients.flatMap((i) => (i.selectedFoodId ? [i.selectedFoodId] : [])))
+      const ingredients = d.ingredients.flatMap((i) => {
+        const f = i.selectedFoodId ? foods.get(i.selectedFoodId) : undefined
+        return f ? [{ foodId: f.id, foodName: f.name, quantity: { amount: i.grams, serving: { label: 'g', grams: 1 } }, ...(i.note ? { note: i.note } : {}) }] : []
+      })
+      return {
+        draft: { name: d.name, servings: d.servings, ingredients, instructions: d.instructions },
+        unmatched: d.ingredients.filter((i) => !i.selectedFoodId).map((i) => ({ name: i.name, grams: i.grams })),
+        model: d.model,
+      }
     },
   }),
 

@@ -12,4 +12,5 @@ export const OFF_LICENSE = 'Open Database License (ODbL) 1.0; contents under Dat
 
 /** Seed dataset version; bump when usdaFoods.json changes so seeding re-runs. */
 // v2: catalog names, aliases and serving labels translated to Spanish (Spain); re-seed installed apps.
-export const SEED_VERSION = 2;
+// v3: adds the Spanish BEDCA catalog (bedcaFoods.json) and the CIQUAL gap-fill (ciqualFoods.json).
+export const SEED_VERSION = 3;

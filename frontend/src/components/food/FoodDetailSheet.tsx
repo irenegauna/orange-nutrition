@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import type { Food, LogEntry, MealType, Quantity } from '@/core/types'
 import { MEAL_LABELS, TO_MEAL } from '@/lib/format'
-import { useAddEntry, useDeleteEntry, useFood, useFoodPreview, useSetFavorite, useUpdateEntry } from '@/services/queries'
+import { useAddEntry, useDeleteEntry, useFood, useFoodPreview, useRecipesForDish, useSetFavorite, useUpdateEntry } from '@/services/queries'
+import { useNavigate } from 'react-router-dom'
 import { Sheet } from '../ui/sheet'
 import { Button } from '../ui/button'
 import { ConfirmDialog } from '../ui/dialog'
@@ -46,6 +47,8 @@ export function FoodDetailSheet(props: Props) {
   const update = useUpdateEntry()
   const del = useDeleteEntry()
   const fav = useSetFavorite()
+  const homeRecipe = useRecipesForDish(props.mode === 'add' ? (food?.id ?? null) : null).data?.[0]
+  const navigate = useNavigate()
 
   const servings = food?.servings ?? (entry ? [entry.quantity.serving] : [])
   const title = food?.name ?? entry?.name ?? ''
@@ -121,6 +124,22 @@ export function FoodDetailSheet(props: Props) {
             <h3 className="mb-2 text-[13px] font-medium text-muted">Momento del día</h3>
             <MealPicker value={meal} onChange={setMeal} />
           </section>
+          {homeRecipe && props.mode === 'add' && (
+            <button
+              type="button"
+              className="flex min-h-11 w-full items-center gap-3 rounded-2xl bg-soft px-4 py-3 text-left"
+              onClick={() => {
+                props.onClose()
+                navigate(`/add?tab=recipes&meal=${props.meal}&recipe=${encodeURIComponent(homeRecipe.id)}`)
+              }}
+            >
+              <span aria-hidden className="emoji text-[20px]">👩‍🍳</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14.5px] font-semibold">¿La haces en casa? Ver la receta</span>
+                <span className="block text-[12.5px] text-muted">Estos valores son los de la tabla oficial del plato. Si lo haces distinto, personaliza la receta.</span>
+              </span>
+            </button>
+          )}
           {food && (
             <Button
               variant="ghost"

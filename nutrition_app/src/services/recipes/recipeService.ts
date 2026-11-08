@@ -8,6 +8,7 @@ import { quantityToGrams } from '../../core/utils/units';
 import { getDb, guard } from '../../data/db';
 import { foodRepository, mealEntryRepository, preferencesRepository, recipeRepository } from '../../data/repositories';
 import { snapshotOf } from '../meals/snapshot';
+import { metaRepository } from '../../data/repositories/metaRepository';
 
 export interface IngredientInput {
   foodId: string;
@@ -26,6 +27,8 @@ export interface RecipeInput {
   mealTypes?: MealType[];
   instructions?: string[];
   tags?: string[];
+  /** The measured dish food this recipe is a home-made version of. */
+  dishFoodId?: string;
 }
 
 async function buildIngredient(input: IngredientInput): Promise<RecipeIngredient> {
@@ -49,6 +52,7 @@ export async function createRecipe(input: RecipeInput): Promise<Recipe> {
     mealTypes: input.mealTypes ?? [],
     instructions: input.instructions ?? [],
     tags: input.tags ?? [],
+    ...(input.dishFoodId ? { dishFoodId: input.dishFoodId } : {}),
     createdAt: now,
     updatedAt: now,
   });
@@ -67,7 +71,7 @@ export async function updateRecipe(
   return guard('Update recipe', () =>
     db.transaction('rw', db.recipes, async () => {
       const r = await recipeRepository.getOrThrow(id);
-      const next: Recipe = { ...r, updatedAt: nowIso() };
+      const next: Recipe = { ...ownCopy(r), updatedAt: nowIso() };
       for (const [k, v] of Object.entries(patch)) {
         if (v === null) delete (next as unknown as Record<string, unknown>)[k];
         else if (v !== undefined) (next as unknown as Record<string, unknown>)[k] = v;
@@ -77,8 +81,19 @@ export async function updateRecipe(
   );
 }
 
+/** Edited classic recipes become the user's: drop the builtin marker so seeding leaves them alone. */
+function ownCopy(r: Recipe): Recipe {
+  const { builtin: _b, ...rest } = r;
+  return rest;
+}
+
 export async function deleteRecipe(id: string): Promise<void> {
-  await recipeRepository.getOrThrow(id);
+  const r = await recipeRepository.getOrThrow(id);
+  // Deleted classics must not come back on the next catalog refresh.
+  if (r.builtin) {
+    const removed = (await metaRepository.get<string[]>('removedClassicRecipes')) ?? [];
+    if (!removed.includes(r.builtin.key)) await metaRepository.set('removedClassicRecipes', [...removed, r.builtin.key]);
+  }
   await recipeRepository.delete(id);
   await preferencesRepository.update((p) => ({ ...p, favoriteRecipeIds: p.favoriteRecipeIds.filter((r) => r !== id) }));
 }
@@ -86,7 +101,7 @@ export async function deleteRecipe(id: string): Promise<void> {
 export async function addIngredient(recipeId: string, input: IngredientInput): Promise<Recipe> {
   const ing = await buildIngredient(input);
   const r = await recipeRepository.getOrThrow(recipeId);
-  return recipeRepository.put({ ...r, ingredients: [...r.ingredients, ing], updatedAt: nowIso() });
+  return recipeRepository.put({ ...ownCopy(r), ingredients: [...r.ingredients, ing], updatedAt: nowIso() });
 }
 
 export async function updateIngredient(recipeId: string, ingredientId: string, patch: { quantity?: Quantity; note?: string }): Promise<Recipe> {
@@ -103,13 +118,13 @@ export async function updateIngredient(recipeId: string, ingredientId: string, p
   if (patch.note !== undefined) ing.note = patch.note;
   const ingredients = [...r.ingredients];
   ingredients[idx] = ing;
-  return recipeRepository.put({ ...r, ingredients, updatedAt: nowIso() });
+  return recipeRepository.put({ ...ownCopy(r), ingredients, updatedAt: nowIso() });
 }
 
 export async function removeIngredient(recipeId: string, ingredientId: string): Promise<Recipe> {
   const r = await recipeRepository.getOrThrow(recipeId);
   if (!r.ingredients.some((i) => i.id === ingredientId)) throw new DataError('NOT_FOUND', `Ingredient ${ingredientId} not in recipe`);
-  return recipeRepository.put({ ...r, ingredients: r.ingredients.filter((i) => i.id !== ingredientId), updatedAt: nowIso() });
+  return recipeRepository.put({ ...ownCopy(r), ingredients: r.ingredients.filter((i) => i.id !== ingredientId), updatedAt: nowIso() });
 }
 
 /** Computes nutrition from current food data (snapshots used for deleted foods). */
@@ -164,6 +179,8 @@ export async function logRecipe(recipeId: string, input: LogRecipeInput): Promis
 }
 
 export const getRecipe = (id: string) => recipeRepository.get(id);
+/** Recipes that are the home-made version of a measured dish (for "ver receta / personalizar"). */
+export const getRecipesForDish = async (foodId: string) => (await recipeRepository.list()).filter((r) => r.dishFoodId === foodId);
 export const listRecipes = () => recipeRepository.list();
 export const searchRecipes = (q: string) => recipeRepository.search(q);
 

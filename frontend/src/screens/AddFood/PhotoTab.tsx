@@ -37,6 +37,7 @@ const FRACTIONS: Record<string, string> = { '0.25': '¼', '0.5': '½', '0.75': '
 const portionNote = (p?: { count: number; servingLabel: string }) => {
   if (!p) return undefined
   const k = String(Math.round(p.count * 100) / 100)
+  if (k === '1') return p.servingLabel
   return `${FRACTIONS[k] ?? k.replace('.', ',')} × ${p.servingLabel}`
 }
 

@@ -15,7 +15,7 @@ const summary = await getDailySummary();   // totals, per meal, goal progress, r
 
 ## Language
 
-The app is Spanish (Spain): the USDA starter catalog has Spanish names, Spanish-only search aliases and Spanish serving labels (`scripts/usda-selection.ts`, `scripts/servingLabelsEs.ts`; `SEED_VERSION` 2 refreshes installed catalogs). User-facing texts produced by the backend (recommendation explanations, profile warnings/sources, AI privacy notice, common errors) are Spanish. `parseIntent` understands Spanish and English phrasing. Open Food Facts lookups prefer `product_name_es` (`lc=es`). Gemini is asked for Spanish food names (photos) and Spanish replies. `source.originalName` keeps the USDA English description for attribution.
+The app is Spanish (Spain): the USDA starter catalog has Spanish names, Spanish-only search aliases and Spanish serving labels (`scripts/usda-selection.ts`, `scripts/servingLabelsEs.ts`; `SEED_VERSION` 3 refreshes installed catalogs). Spanish foods and dishes come from BEDCA (AESAN, `source.type: 'bedca'`, values unmodified, attribution required, non-commercial use only) and a CIQUAL gap-fill (ANSES, `'ciqual'`: tortilla de patatas, calamares a la romana, albóndigas…), with Spanish household portions (loncha, pincho, ración, tortilla entera, croqueta, caña…). Rows with evident source errors are left out, never edited (`EXCLUDED_SEED_IDS` in `data/seed/index.ts`). User-facing texts produced by the backend (recommendation explanations, profile warnings/sources, AI privacy notice, common errors) are Spanish. `parseIntent` understands Spanish and English phrasing. Open Food Facts lookups prefer `product_name_es` (`lc=es`). Gemini is asked for Spanish food names (photos) and Spanish replies. `source.originalName` keeps the USDA English description for attribution.
 
 ## Key rules the UI must respect
 
@@ -90,6 +90,11 @@ Behaviour: found products are cached 30 days and saved to `foods` (searchable of
 | `getRecipeNutrition(id): RecipeNutrition` | `total`, `perServing` (with coverage), `per100g`, `gramsPerServing`, `ingredientsUsingSnapshot` (deleted foods). Per-100 g uses `cookedWeightGrams` when set, otherwise raw ingredient weight (water loss is never guessed). |
 | `logRecipe(recipeId, { date, mealType, servings?, note? })` | Logs N servings as one entry. |
 | `listRecipes()` / `searchRecipes(q)` / `setRecipeFavorite(id, bool)` | |
+| `getRecipesForDish(foodId)` | Recipes whose `dishFoodId` is that food — the home-made version of a measured dish ("¿La haces en casa?"). |
+
+**Classic Spanish recipes.** `initializeApp()` also runs `seedClassicRecipes()`: ~40 traditional recipes (`data/seed/classicRecipesData.ts`; tortilla, cocido, lentejas, paella, gazpacho, croquetas, postres…) with typical home quantities as raw weights of catalog foods. They carry `builtin: { key, version }` and, when the catalog has the measured dish, `dishFoodId`; the measured dish stays the default for search and photos. Any edit (`updateRecipe`, ingredient changes) removes `builtin`, so the recipe becomes the user's and refreshes (bump `CLASSIC_RECIPES_VERSION`) never overwrite it; deleting a classic is remembered and it is not re-added.
+
+**AI recipe drafts.** `draftRecipeWithAI({ dish, servings?, notes? }): Promise<AiRecipeDraft>` asks Gemini for a typical home recipe and matches each ingredient to local foods (`matches`, `selectedFoodId`, raw `grams`, `note`); `unmatchedCount` counts ingredients the catalog lacks. Gemini never supplies nutrient values. Nothing is saved — review, then `createRecipe` (pass `dishFoodId` if it is a version of a catalog dish). Needs an API key and accepted privacy notice only.
 
 ## Goals & preferences
 

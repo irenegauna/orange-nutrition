@@ -239,6 +239,10 @@ export interface Recipe {
   mealTypes: MealType[];
   instructions: string[];
   tags: string[];
+  /** Set on the app's classic Spanish recipes (seeded). Cleared when the user edits it — then it is theirs. */
+  builtin?: { key: string; version: number };
+  /** Measured dish (BEDCA/CIQUAL) this recipe is the home-made version of, e.g. the tortilla de patata food. */
+  dishFoodId?: string;
   createdAt: IsoTimestamp;
   updatedAt: IsoTimestamp;
 }

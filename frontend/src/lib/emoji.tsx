@@ -29,6 +29,11 @@ export const MACRO_EMOJI = { protein: '💪', carbs: '🍞', fat: '🥑', fiber:
 // Name keywords first (most specific wins), then the backend's food category.
 // Food names are Spanish; they are matched lowercase with accents stripped (see `normalize`).
 const BY_NAME: [RegExp, string][] = [
+  // Spanish dishes first, so "tortilla de patata" isn't a potato and "arroz con leche" isn't rice.
+  [/tortilla(?! de (maiz|trigo))|huevos rotos/, '🍳'], [/paella|fideua|arroz a banda|arroz negro/, '🥘'],
+  [/gazpacho|salmorejo/, '🍅'], [/^cocido\b|fabada|lentejas con|potaje|marmitako|sopa de ajo/, '🍲'], [/croqueta/, '🧆'],
+  [/\bflan\b|natillas|crema catalana|arroz con leche/, '🍮'], [/empanada/, '🥟'], [/pulpo/, '🐙'], [/calamar|sepia/, '🦑'],
+  [/torrija|migas|pan con tomate/, '🍞'], [/pisto|pimientos asados/, '🫑'], [/patatas bravas|patatas a la riojana/, '🥔'], [/albondiga/, '🧆'],
   [/boniato|batata/, '🍠'],
   [/\bhuevos?\b|\bclara de huevo|\byema/, '🥚'], [/platano|banana/, '🍌'], [/manzana/, '🍎'], [/aguacate/, '🥑'],
   [/naranja|mandarina|clementina/, '🍊'], [/limon|\blima\b/, '🍋'], [/fresa|freson/, '🍓'], [/arandano/, '🫐'], [/\buvas?\b/, '🍇'],

@@ -148,6 +148,8 @@ export const recipeSchema = z.object({
   mealTypes: z.array(mealTypeSchema),
   instructions: z.array(z.string()),
   tags: z.array(z.string()),
+  builtin: z.object({ key: z.string().min(1), version: z.number().int().positive() }).optional(),
+  dishFoodId: z.string().min(1).optional(),
   createdAt: isoTimestampSchema,
   updatedAt: isoTimestampSchema,
 }) satisfies z.ZodType<Recipe, z.ZodTypeDef, unknown>;

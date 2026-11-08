@@ -206,6 +206,8 @@ export interface RecipeIngredient {
   foodId: string
   foodName: string
   quantity: Quantity
+  /** e.g. "para freír: solo lo que absorbe". */
+  note?: string
 }
 
 export interface RecipeDraft {
@@ -213,6 +215,17 @@ export interface RecipeDraft {
   name: string
   servings: number
   ingredients: RecipeIngredient[]
+  instructions?: string[]
+  /** The measured dish (BEDCA/CIQUAL) this is a home-made version of. */
+  dishFoodId?: string
+}
+
+/** Gemini's draft of a recipe — ingredients already matched to catalog foods, nothing saved yet. */
+export interface AiRecipeDraft {
+  draft: RecipeDraft
+  /** Ingredients Gemini named that the catalog doesn't have (add them by hand). */
+  unmatched: { name: string; grams: number }[]
+  model: string
 }
 
 export interface RecipeNutrition {
@@ -223,6 +236,11 @@ export interface RecipeNutrition {
 
 export interface Recipe extends RecipeDraft {
   id: string
+  /** One of the app's classic Spanish recipes, untouched by the user. */
+  builtin: boolean
+  instructions: string[]
+  prepMinutes?: number
+  tags: string[]
   nutrition: RecipeNutrition
   createdAt: string
   updatedAt: string

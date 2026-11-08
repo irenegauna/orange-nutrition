@@ -91,7 +91,8 @@ export function configureAiFetch(fetchImpl: typeof fetch | undefined): void {
   fetchOverride = fetchImpl;
 }
 
-export type AiFeature = 'photo' | 'suggestions';
+/** 'recipe' (draft a recipe on request) needs only a key + consent, like the connection test. */
+export type AiFeature = 'photo' | 'suggestions' | 'recipe';
 
 /** Returns a client if the feature is enabled, otherwise throws DataError('UNAVAILABLE'). */
 export async function getAiClient(feature: AiFeature): Promise<GeminiClient> {

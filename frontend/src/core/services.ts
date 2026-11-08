@@ -68,6 +68,10 @@ export interface RecipeService {
   get(id: string): Promise<Recipe | null>
   calculate(draft: RecipeDraft): Promise<RecipeNutrition>
   save(draft: RecipeDraft): Promise<Recipe>
+  /** Recipes that are the home-made version of a measured dish food. */
+  forDish(foodId: string): Promise<Recipe[]>
+  /** Gemini drafts a typical recipe ("cocido madrileño"); ingredients matched to the catalog. Not saved. */
+  draftWithAI(input: { dish: string; servings?: number }): Promise<import('./types').AiRecipeDraft>
   delete(id: string): Promise<void>
 }
 
