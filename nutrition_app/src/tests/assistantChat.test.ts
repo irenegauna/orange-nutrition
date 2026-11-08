@@ -76,7 +76,7 @@ describe('AI assistant chat', () => {
 
   it('migrates settings saved with a retired model', async () => {
     await metaRepository.set('aiSettings', { provider: 'gemini', apiKey: 'AIzaTestKey1234567890', model: 'gemini-flash-latest', photoRecognitionEnabled: false, aiSuggestionsEnabled: true, consentAcceptedAt: '2026-11-07T00:00:00.000Z' });
-    expect((await getAiSettings()).model).toBe('gemini-3.5-flash');
+    expect((await getAiSettings()).model).toBe('gemini-3.5-flash-lite');
   });
 
   it('maps provider failures and rejects empty messages', async () => {

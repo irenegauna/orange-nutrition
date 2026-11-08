@@ -3,7 +3,7 @@ import { aiSettingsSchema } from '../../core/validation/schemas';
 import { DataError } from '../../core/utils/errors';
 import { nowIso } from '../../core/utils/dates';
 import { metaRepository } from '../../data/repositories';
-import { DEFAULT_GEMINI_MODEL, GeminiClient, GeminiError, RETIRED_GEMINI_MODELS } from '../../integrations/gemini/client';
+import { DEFAULT_GEMINI_MODEL, GeminiClient, GeminiError, PREVIOUS_DEFAULT_GEMINI_MODELS, RETIRED_GEMINI_MODELS } from '../../integrations/gemini/client';
 
 /** Shown to the user before AI can be enabled. Consent is stored with a timestamp. */
 export const AI_PRIVACY_NOTICE = [
@@ -27,7 +27,8 @@ export async function getAiSettings(): Promise<AiSettings> {
   if (!stored) return defaultAiSettings();
   const merged = { ...defaultAiSettings(), ...stored };
   // Google stopped serving these to new users: move to the current default.
-  if (RETIRED_GEMINI_MODELS.includes(merged.model)) merged.model = DEFAULT_GEMINI_MODEL;
+  // Retired models, and former defaults (the user never picks a model in the UI), move to the current default.
+  if (RETIRED_GEMINI_MODELS.includes(merged.model) || PREVIOUS_DEFAULT_GEMINI_MODELS.includes(merged.model)) merged.model = DEFAULT_GEMINI_MODEL;
   return merged;
 }
 

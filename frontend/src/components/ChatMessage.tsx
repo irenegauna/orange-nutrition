@@ -16,7 +16,7 @@ export function ChatMessage({ role, children }: { role: 'user' | 'assistant'; ch
           mine ? 'rounded-br-md bg-brand-gradient font-medium text-[#3a1a05]' : 'rounded-bl-md border border-border/70 bg-surface',
         )}
       >
-        <span className="sr-only">{mine ? 'Has dicho: ' : 'Asistente: '}</span>
+        <span className="sr-only">{mine ? 'Has dicho: ' : 'Coach: '}</span>
         {children}
       </div>
     </div>
@@ -25,7 +25,7 @@ export function ChatMessage({ role, children }: { role: 'user' | 'assistant'; ch
 
 export function TypingIndicator() {
   return (
-    <div className="flex gap-2" role="status" aria-label="El asistente está pensando">
+    <div className="flex gap-2" role="status" aria-label="El coach está pensando">
       <div className="grid size-9 place-items-center rounded-full bg-linear-to-br from-soft to-meal-lunch">
         <span aria-hidden className="emoji text-[18px]">🍊</span>
       </div>

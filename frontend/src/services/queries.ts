@@ -198,6 +198,11 @@ export const useSetPhotoEnabled = () => useAiMutation((enabled: boolean) => api.
 export const useAnalyzePhoto = () =>
   useMutation({ mutationFn: (v: { image: Blob; meal: MealType; hint?: string }) => api.photo.analyze(v.image, { meal: v.meal, hint: v.hint }) })
 
+export const useRefinePhoto = () =>
+  useMutation({
+    mutationFn: (v: { photoId: string; feedback: string; current: { name: string; grams: number }[]; previousFeedback?: string[]; meal: MealType }) => api.photo.refine(v),
+  })
+
 export const usePhotoTotals = (items: { foodId: string; grams: number }[]) =>
   useQuery({
     queryKey: ['photo', 'totals', JSON.stringify(items)],

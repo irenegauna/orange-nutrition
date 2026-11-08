@@ -29,6 +29,7 @@ const SCHEMA: GeminiSchema = {
   properties: {
     isFood: { type: 'BOOLEAN' },
     description: { type: 'STRING' },
+    reply: { type: 'STRING' },
     items: {
       type: 'ARRAY',
       items: {
@@ -59,6 +60,7 @@ const itemSchema = z.object({
 const responseSchema = z.object({
   isFood: z.boolean(),
   description: z.string().catch('').transform((v) => v.slice(0, 500)),
+  reply: z.string().optional().catch(undefined).transform((v) => v?.slice(0, 400)),
   items: z
     .array(z.unknown())
     .catch([])
@@ -153,8 +155,14 @@ export async function recognizeMealPhoto(image: Blob | ArrayBuffer | PreparedIma
   const parsed = responseSchema.safeParse(raw);
   if (!parsed.success) throw new DataError('UNAVAILABLE', 'No se ha podido entender la respuesta de la IA', { code: 'INVALID_RESPONSE' });
 
+  const photo = opts.savePhoto === false ? null : await savePhoto(prepared);
+  return buildResult(parsed.data, photo?.id, client.lastModel ?? settings.model);
+}
+
+/** Matches every detected item to local foods and assembles the result. */
+async function buildResult(data: z.infer<typeof responseSchema>, photoId: string | undefined, model: string): Promise<PhotoRecognitionResult> {
   const items: PhotoRecognitionItem[] = [];
-  for (const it of parsed.data.isFood ? parsed.data.items : []) {
+  for (const it of data.isFood ? data.items : []) {
     const detected: DetectedFood = {
       name: it.name,
       searchTerms: it.searchTerms,
@@ -167,21 +175,80 @@ export async function recognizeMealPhoto(image: Blob | ArrayBuffer | PreparedIma
     const grams = Math.round(detected.estimatedGrams);
     items.push({ id: createId('det'), detected, matches, selectedFoodId: best?.food.id ?? null, grams, nutrients: best ? nutrientsForGrams(best.food, grams) : {} });
   }
-
-  const photo = opts.savePhoto === false ? null : await savePhoto(prepared);
   const matched = items.filter((i) => i.selectedFoodId);
   return {
     id: createId('rec_photo'),
-    isFood: parsed.data.isFood,
-    description: parsed.data.description,
+    isFood: data.isFood,
+    description: data.description,
+    ...(data.reply ? { reply: data.reply } : {}),
     items,
     totals: sumNutrients(matched.map((i) => ({ grams: i.grams, nutrients: i.nutrients }))),
     unmatchedCount: items.length - matched.length,
-    ...(photo ? { photoId: photo.id } : {}),
+    ...(photoId ? { photoId } : {}),
     provider: 'gemini',
-    model: client.lastModel ?? settings.model,
+    model,
     createdAt: nowIso(),
   };
+}
+
+export interface RefinePhotoInput {
+  /** The stored photo from `recognizeMealPhoto`. */
+  photoId: string;
+  /** What the user says, e.g. "te has dejado el huevo" or "el arroz eran unos 100 g". */
+  feedback: string;
+  /** The list as the user currently sees it (after any manual edits). */
+  current: { name: string; grams: number }[];
+  /** Earlier corrections in this conversation, oldest first. */
+  previousFeedback?: string[];
+  mealType?: MealType;
+}
+
+/**
+ * Lets the user correct the AI ("you missed the egg"). Sends the same photo, the current list and the
+ * correction; returns the full corrected list, re-matched to LOCAL foods (nutrition never from the AI).
+ * Nothing is logged. Errors as in `recognizeMealPhoto`; NOT_FOUND if the photo was deleted.
+ */
+export async function refineMealPhoto(input: RefinePhotoInput): Promise<PhotoRecognitionResult> {
+  const feedback = input.feedback.trim().slice(0, 500);
+  if (!feedback) throw new DataError('VALIDATION', 'Escribe qué hay que corregir');
+  const client = await getAiClient('photo');
+  const settings = await getAiSettings();
+  const photo = await getDb().photos.get(input.photoId);
+  if (!photo) throw new DataError('NOT_FOUND', 'La foto ya no está disponible; haz otra');
+  const current = input.current.slice(0, 20).map((c) => ({ name: c.name.slice(0, 120), grams: Math.round(c.grams) }));
+  const earlier = (input.previousFeedback ?? []).slice(-5).map((f) => f.slice(0, 300));
+
+  let raw: unknown;
+  try {
+    raw = await client.generateJson({
+      system: `${SYSTEM}
+
+The user is reviewing your previous answer and sends a correction. Return the FULL corrected list:
+- keep the items the user did not mention, with their current grams;
+- add foods the user says you missed, remove the ones they say are wrong, and apply any name, preparation or quantity changes they give;
+- the user knows what they ate: trust their correction over your visual impression;
+- also return "reply": one short, friendly sentence in Spanish (Spain) saying what you changed.`,
+      parts: [
+        { inline_data: { mime_type: photo.mimeType, data: bytesToBase64(photo.data) } },
+        {
+          text: [
+            `Meal: ${input.mealType ?? 'meal'}.`,
+            `Current list (name, grams): ${JSON.stringify(current)}`,
+            ...(earlier.length ? [`Earlier corrections: ${JSON.stringify(earlier)}`] : []),
+            `User correction: ${JSON.stringify(feedback)}`,
+          ].join('\n'),
+        },
+      ],
+      schema: SCHEMA,
+      temperature: 0.1,
+    });
+  } catch (e) {
+    if (e instanceof GeminiError) throw new DataError('UNAVAILABLE', e.message, { code: e.code }, { cause: e });
+    throw e;
+  }
+  const parsed = responseSchema.safeParse(raw);
+  if (!parsed.success) throw new DataError('UNAVAILABLE', 'No se ha podido entender la respuesta de la IA', { code: 'INVALID_RESPONSE' });
+  return buildResult(parsed.data, input.photoId, client.lastModel ?? settings.model);
 }
 
 export interface PhotoMealItemInput {

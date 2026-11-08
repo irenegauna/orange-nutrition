@@ -348,7 +348,7 @@ function AiSection() {
     <Group
       id="ai"
       title="✨ IA con Gemini"
-      description="Opcional. Activa el asistente de chat y el reconocimiento de fotos de comidas. Usa tu propia clave de API de Google Gemini (gratuita), guardada solo en este dispositivo."
+      description="Opcional. Activa el Coach con IA y el reconocimiento de fotos de comidas. Usa tu propia clave de API de Google Gemini (gratuita), guardada solo en este dispositivo."
     >
       {!s ? (
         <p className="text-sm text-muted">Cargando…</p>
@@ -360,10 +360,10 @@ function AiSection() {
             </div>
             <p className="text-[14px] leading-relaxed">
               {s.assistantAvailable || s.photoAvailable
-                ? [s.assistantAvailable && 'La pestaña Ideas usa Gemini para chatear.', s.photoAvailable && 'Puedes registrar comidas con una foto en Añadir comida → Foto.']
+                ? [s.assistantAvailable && 'La pestaña Coach usa Gemini para chatear.', s.photoAvailable && 'Puedes registrar comidas con una foto en Añadir comida → Foto.']
                     .filter(Boolean)
                     .join(' ')
-                : 'Actívalos para chatear con Gemini en la pestaña Ideas y registrar comidas con una foto. Sin ellos, todo lo demás funciona igual.'}
+                : 'Actívalos para chatear con Gemini en la pestaña Coach y registrar comidas con una foto. Sin ellos, todo lo demás funciona igual.'}
             </p>
           </div>
 
@@ -432,7 +432,7 @@ function AiSection() {
           {s.hasApiKey && s.consentAccepted && (
             <>
               <Switch
-                label="Usar Gemini en el asistente"
+                label="Usar Gemini en el Coach"
                 checked={s.assistantEnabled}
                 disabled={setEnabled.isPending}
                 onChange={(v) => run(() => setEnabled.mutateAsync(v))}

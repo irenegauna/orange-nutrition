@@ -32,6 +32,7 @@ import {
   type NutritionValues,
   type Preferences,
   type ProfileInput,
+  type PhotoAnalysis,
   type ProfileState,
   type Quantity,
   type Recipe,
@@ -374,7 +375,7 @@ async function weeklyNutrientGaps(date: ISODate): Promise<AssistantReply> {
 }
 
 const AI_ERROR_TEXT: Record<string, string> = {
-  RATE_LIMITED: 'se ha alcanzado el límite gratuito de Gemini (5 peticiones por minuto); espera un minuto y vuelve a intentarlo',
+  RATE_LIMITED: 'se ha alcanzado el límite gratuito de Gemini (unas 20 peticiones por minuto y un límite diario); espera un minuto y vuelve a intentarlo',
   OVERLOADED: 'Gemini está muy saturado ahora mismo; inténtalo de nuevo en un momento',
   MODEL_NOT_FOUND: 'el modelo de Gemini seleccionado no está disponible para tu clave',
   INVALID_KEY: 'Gemini ha rechazado tu clave de API; revísala en Ajustes',
@@ -554,6 +555,25 @@ const aiErrorMessage = (e: unknown, action: string) => {
   return new Error(`${action}: ${AI_ERROR_TEXT[code] ?? (e instanceof Error ? e.message : 'algo ha ido mal')}.`)
 }
 
+function photoResultToUI(r: B.PhotoRecognitionResult): PhotoAnalysis {
+  return {
+    isFood: r.isFood,
+    description: r.description,
+    photoId: r.photoId,
+    ...(r.reply ? { reply: r.reply } : {}),
+    model: r.model,
+    items: r.items.map((i) => ({
+      id: i.id,
+      name: i.detected.name,
+      estimatedGrams: i.detected.estimatedGrams,
+      confidence: i.detected.confidence,
+      preparation: i.detected.preparation,
+      matches: i.matches.map((m) => foodToUI(m.food, m.isFavorite)),
+      selectedFoodId: i.selectedFoodId,
+    })),
+  }
+}
+
 const photoService = initialized({
   async analyze(image: Blob, { meal, hint }: { meal: MealType; hint?: string }) {
     let r: B.PhotoRecognitionResult
@@ -562,21 +582,17 @@ const photoService = initialized({
     } catch (e) {
       throw aiErrorMessage(e, 'No se ha podido analizar la foto')
     }
-    return {
-      isFood: r.isFood,
-      description: r.description,
-      photoId: r.photoId,
-      model: r.model,
-      items: r.items.map((i) => ({
-        id: i.id,
-        name: i.detected.name,
-        estimatedGrams: i.detected.estimatedGrams,
-        confidence: i.detected.confidence,
-        preparation: i.detected.preparation,
-        matches: i.matches.map((m) => foodToUI(m.food, m.isFavorite)),
-        selectedFoodId: i.selectedFoodId,
-      })),
+    return photoResultToUI(r)
+  },
+  async refine({ photoId, feedback, current, previousFeedback, meal }: { photoId: string; feedback: string; current: { name: string; grams: number }[]; previousFeedback?: string[]; meal: MealType }) {
+    let r: B.PhotoRecognitionResult
+    try {
+      r = await B.refineMealPhoto({ photoId, feedback, current, ...(previousFeedback ? { previousFeedback } : {}), mealType: toBMeal(meal) })
+    } catch (e) {
+      if (e instanceof B.DataError && e.code !== 'UNAVAILABLE') throw e
+      throw aiErrorMessage(e, 'No se ha podido aplicar la corrección')
     }
+    return photoResultToUI(r)
   },
   async rematch(name: string) {
     const results = await B.matchDetectedFood({ name, searchTerms: [name], estimatedGrams: 100, confidence: 1 })

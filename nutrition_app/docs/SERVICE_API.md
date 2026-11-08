@@ -156,6 +156,8 @@ Allergies, diets (vegan, vegetarian, pescatarian, gluten_free, dairy_free), disl
 
 ## AI: photo recognition & smart suggestions (Google Gemini, opt-in)
 
+**Models & limits:** default `gemini-3.5-flash-lite` (free tier ≈ 15 requests/min, 500/day), then `gemini-3.5-flash` (≈ 5/min, 20/day) and older Flash/Flash-Lite models. Free quotas are per model: when one model is rate-limited (client-side per-model limiter or Google's 429) the next is tried; only if all are limited is `RATE_LIMITED` returned, with the shortest `retryAfterSeconds`.
+
 AI is **off by default**. To turn it on: (1) the user pastes their own free key from Google AI Studio, (2) accepts `AI_PRIVACY_NOTICE`, (3) enables each feature. The key is stored only on the device (`meta` table) and is never included in backups. Calls go straight from the browser to Google's **Interactions API** (`POST generativelanguage.googleapis.com/v1beta/interactions`). Google retired `generateContent` access to older models for new users, and new-style `AQ.…` keys only work with the Interactions API. CORS is supported for `*.github.io`. The free tier allows **5 requests per minute**: the client enforces this locally, retries temporary "high demand" (503) errors once, then tries the next model.
 
 **The AI never provides nutrient values.** It only names foods and estimates grams (photos) or picks foods and grams from the app's catalog (suggestions). Nutrition is always calculated locally from the database, hard allergy/diet filters are re-applied, and the user confirms before anything is logged.
@@ -184,6 +186,7 @@ await logPhotoMeal({ date: today(), mealType: 'lunch', photoId: result.photoId,
 
 | Function | Description |
 |---|---|
+| `refineMealPhoto({ photoId, feedback, current, previousFeedback?, mealType? })` | User correction ("te has dejado el huevo"): sends the same stored photo, the current list and the correction; returns the full corrected list re-matched to local foods, plus a short `reply`. Nothing is logged. |
 | `recognizeMealPhoto(image: Blob \| ArrayBuffer, { mealType?, hint?, savePhoto? = true }): Promise<PhotoRecognitionResult>` | Downscales the photo to ≤ 1024 px JPEG on-device, sends it to Gemini, then matches each item to local foods (preferring cooked forms for "grilled/cooked", never dry weights unless stated). Nothing is logged. Throws `DataError('UNAVAILABLE', …, { code })` when AI is off or the provider fails (`RATE_LIMITED`, `OFFLINE`, `INVALID_KEY`…). Fall back to manual search. |
 | `matchDetectedFood(detected)` | Re-run matching (e.g. after the user renames an item). |
 | `logPhotoMeal({ date, mealType, items: [{ foodId, grams? \| quantity? }], photoId?, note? })` | Atomic. Entries get `origin: 'photo_ai'` and `photoId`. |

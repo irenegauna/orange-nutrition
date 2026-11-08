@@ -9,8 +9,9 @@
  * - Free-tier requests may be used by Google to improve its products; the app shows AI_PRIVACY_NOTICE
  *   and requires consent before any request.
  * - Responses are requested as JSON constrained by a JSON schema (`response_format`), then validated with Zod.
- * - Free tier is ~5 requests/minute: a client-side limiter fails fast with RATE_LIMITED instead of
- *   wasting quota; temporary "high demand" (503) errors are retried, then the next model is tried.
+ * - Free-tier quotas are PER MODEL (Flash-Lite ≈ 15 RPM / 500 RPD, Flash ≈ 5 RPM / 20 RPD, Nov 2026).
+ *   A per-model client-side limiter fails fast instead of wasting quota, and a rate-limited model
+ *   falls back to the next one; temporary "high demand" (503) errors are retried, then the next model.
  */
 
 export type GeminiErrorCode =
@@ -72,7 +73,7 @@ export interface GeminiClientOptions {
   baseUrl?: string;
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
-  /** Client-side cap (free tier allows ~5/min). */
+  /** Client-side cap per model. Default: FREE_TIER_RPM for the model (5 if unknown). */
   maxRequestsPerMinute?: number;
   /** For tests. */
   sleep?: (ms: number) => Promise<void>;
@@ -80,22 +81,32 @@ export interface GeminiClientOptions {
 }
 
 /**
- * Free-tier Flash model with the most reliable latency (~3–10 s) in live tests (Nov 2026).
+ * Flash-Lite has the most generous free tier (≈ 15 requests/min, 500/day vs ≈ 5/min, 20/day for
+ * Flash) and handles images, so it is the default; Flash is the first fallback (separate quota).
  * Pro models have a free-tier limit of 0. gemini-3.8-flash is newer but was frequently slow/timing out.
  */
-export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash';
-export const GEMINI_FALLBACK_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.1-flash-lite'];
+export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite';
+export const GEMINI_FALLBACK_MODELS = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash'];
+/** Former defaults: stored settings still using them move to the current default. */
+export const PREVIOUS_DEFAULT_GEMINI_MODELS = ['gemini-3.5-flash'];
 /** Total time budget across fallbacks for one request. */
 const TOTAL_BUDGET_MS = 40_000;
 /** Models Google no longer serves to new users; stored settings using them are migrated. */
 export const RETIRED_GEMINI_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
 export const FREE_TIER_REQUESTS_PER_MINUTE = 5;
+/** Free-tier requests per minute by model (Google AI Studio, Nov 2026). Unknown models: 5. */
+export const FREE_TIER_RPM: Readonly<Record<string, number>> = {
+  'gemini-3.5-flash-lite': 15,
+  'gemini-3.1-flash-lite': 15,
+  'gemini-3.5-flash': 5,
+  'gemini-3.8-flash': 5,
+};
 
-/** Shared across client instances: the quota is per key, not per object. */
-const requestLog: number[] = [];
+/** Shared across client instances: quotas are per key AND per model, not per object. */
+const requestLogs = new Map<string, number[]>();
 /** Clears the limiter (tests). */
 export function resetGeminiRateLimiter(): void {
-  requestLog.length = 0;
+  requestLogs.clear();
 }
 
 interface GeminiErrorBody {
@@ -103,7 +114,8 @@ interface GeminiErrorBody {
 }
 
 export class GeminiClient {
-  private readonly opts: Required<Omit<GeminiClientOptions, 'fetchImpl' | 'sleep' | 'now'>> & {
+  private readonly opts: Required<Omit<GeminiClientOptions, 'fetchImpl' | 'sleep' | 'now' | 'maxRequestsPerMinute'>> & {
+    maxRequestsPerMinute: number | undefined;
     fetchImpl: typeof fetch;
     sleep: (ms: number) => Promise<void>;
     now: () => number;
@@ -118,7 +130,7 @@ export class GeminiClient {
       baseUrl: (opts.baseUrl ?? 'https://generativelanguage.googleapis.com/v1beta').replace(/\/$/, ''),
       timeoutMs: opts.timeoutMs ?? 25_000,
       fetchImpl: opts.fetchImpl ?? ((...a) => globalThis.fetch(...a)),
-      maxRequestsPerMinute: opts.maxRequestsPerMinute ?? FREE_TIER_REQUESTS_PER_MINUTE,
+      maxRequestsPerMinute: opts.maxRequestsPerMinute,
       sleep: opts.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms))),
       now: opts.now ?? Date.now,
     };
@@ -132,19 +144,29 @@ export class GeminiClient {
     const models = [this.opts.model, ...this.opts.fallbackModels.filter((m) => m !== this.opts.model)];
     const started = this.opts.now();
     let lastErr: GeminiError | null = null;
+    let rateLimited: GeminiError | null = null;
     for (const model of models) {
       try {
         const out = await this.callWithRetry(model, options);
         this.lastModel = model;
         return out;
       } catch (e) {
-        // Retired/unknown model, sustained overload or a hung model → try the next one (within budget).
-        const retryable = e instanceof GeminiError && (e.code === 'MODEL_NOT_FOUND' || e.code === 'OVERLOADED' || e.code === 'TIMEOUT');
+        // Rate-limited (quotas are per model), retired/unknown model, sustained overload or a hung
+        // model → try the next one (within budget).
+        const code = e instanceof GeminiError ? e.code : null;
+        const retryable = code === 'RATE_LIMITED' || code === 'MODEL_NOT_FOUND' || code === 'OVERLOADED' || code === 'TIMEOUT';
         if (!retryable) throw e;
         lastErr = e as GeminiError;
-        if ((e as GeminiError).code === 'TIMEOUT' && this.opts.now() - started > TOTAL_BUDGET_MS - this.opts.timeoutMs) break;
+        if (code === 'RATE_LIMITED') {
+          const err = e as GeminiError;
+          // Keep the soonest retry time across models.
+          if (!rateLimited || (err.retryAfterSeconds ?? Infinity) < (rateLimited.retryAfterSeconds ?? Infinity)) rateLimited = err;
+        }
+        if (code === 'TIMEOUT' && this.opts.now() - started > TOTAL_BUDGET_MS - this.opts.timeoutMs) break;
       }
     }
+    // Every model was limited → report the limit (with the shortest wait) rather than e.g. a 404.
+    if (rateLimited && lastErr?.code !== 'TIMEOUT' && lastErr?.code !== 'OVERLOADED') throw rateLimited;
     throw lastErr ?? new GeminiError('MODEL_NOT_FOUND', 'No available Gemini model');
   }
 
@@ -160,19 +182,22 @@ export class GeminiClient {
     }
   }
 
-  private takeRateToken() {
+  private takeRateToken(model: string) {
     const t = this.opts.now();
-    while (requestLog.length && t - requestLog[0]! >= 60_000) requestLog.shift();
-    if (requestLog.length >= this.opts.maxRequestsPerMinute) {
-      const wait = Math.ceil((60_000 - (t - requestLog[0]!)) / 1000);
-      throw new GeminiError('RATE_LIMITED', `Free Gemini limit is ${this.opts.maxRequestsPerMinute} requests per minute; try again in ${wait}s`, 429, wait);
+    const max = this.opts.maxRequestsPerMinute ?? FREE_TIER_RPM[model] ?? FREE_TIER_REQUESTS_PER_MINUTE;
+    const log = requestLogs.get(model) ?? [];
+    requestLogs.set(model, log);
+    while (log.length && t - log[0]! >= 60_000) log.shift();
+    if (log.length >= max) {
+      const wait = Math.ceil((60_000 - (t - log[0]!)) / 1000);
+      throw new GeminiError('RATE_LIMITED', `Free Gemini limit for ${model} is ${max} requests per minute; try again in ${wait}s`, 429, wait);
     }
-    requestLog.push(t);
+    log.push(t);
   }
 
   private async callModel(model: string, o: GenerateJsonOptions): Promise<unknown> {
     if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new GeminiError('OFFLINE', 'Device is offline');
-    this.takeRateToken();
+    this.takeRateToken(model);
     const input: InteractionContent[] = o.parts.map((p) =>
       'text' in p ? { type: 'text', text: p.text } : { type: 'image', data: p.inline_data.data, mime_type: p.inline_data.mime_type },
     );

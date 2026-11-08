@@ -113,6 +113,14 @@ export interface AiService {
 /** Meal photo → foods (Gemini names foods and estimates grams; nutrition comes from the database). */
 export interface PhotoService {
   analyze(image: Blob, opts: { meal: MealType; hint?: string }): Promise<PhotoAnalysis>
+  /** Send a correction ("te has dejado el huevo"): same photo + current list → corrected list. */
+  refine(input: {
+    photoId: string
+    feedback: string
+    current: { name: string; grams: number }[]
+    previousFeedback?: string[]
+    meal: MealType
+  }): Promise<PhotoAnalysis>
   /** Re-run database matching for a food name (e.g. after the user renames an item). */
   rematch(name: string): Promise<import('./types').Food[]>
   /** Totals for the confirmed items, computed by the backend. */

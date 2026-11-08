@@ -538,6 +538,8 @@ export interface PhotoRecognitionResult {
   id: string;
   isFood: boolean;
   description: string;
+  /** Short reply after a user correction (refineMealPhoto). */
+  reply?: string;
   items: PhotoRecognitionItem[];
   /** Totals over matched items only. */
   totals: NutrientTotals;

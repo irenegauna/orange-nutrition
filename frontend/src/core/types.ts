@@ -389,6 +389,8 @@ export interface PhotoAnalysis {
   items: PhotoItem[]
   /** Stored on the device; attached to the entries when logged. */
   photoId?: string
+  /** Gemini's short reply after a correction. */
+  reply?: string
   model: string
 }
 

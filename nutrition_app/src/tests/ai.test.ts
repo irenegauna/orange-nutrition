@@ -8,7 +8,7 @@ import {
   getPhotoBlob,
   getSmartSuggestions,
   logPhotoMeal,
-  recognizeMealPhoto,
+  recognizeMealPhoto, refineMealPhoto,
   revokeAiConsent,
   setAiApiKey,
   testAiConnection,
@@ -83,10 +83,26 @@ describe('Gemini client', () => {
     expect(calls).toEqual(['busy', 'busy', 'calm']);
   });
 
+  it('falls back to another model when one is rate-limited (quotas are per model)', async () => {
+    const used: string[] = [];
+    const fetchImpl = vi.fn(async (_url: unknown, init: unknown) => {
+      const model = JSON.parse((init as RequestInit).body as string).model as string;
+      used.push(model);
+      return model === 'lite' ? geminiErr(429, { error: { status: 'RESOURCE_EXHAUSTED', message: 'quota. Please retry in 30s.' } }) : gemini({ ok: 1 });
+    });
+    const c = new GeminiClient({ apiKey: KEY, model: 'lite', fallbackModels: ['flash'], fetchImpl: fetchImpl as unknown as typeof fetch });
+    await expect(c.generateJson({ system: '', parts: [], schema: { type: 'OBJECT' } })).resolves.toEqual({ ok: 1 });
+    expect(used).toEqual(['lite', 'flash']);
+    expect(c.lastModel).toBe('flash');
+    // All models limited → RATE_LIMITED with the shortest wait.
+    const all = new GeminiClient({ apiKey: KEY, model: 'a', fallbackModels: ['b'], fetchImpl: (async (_u: unknown, init: unknown) => geminiErr(429, { error: { message: `quota. Please retry in ${JSON.parse((init as RequestInit).body as string).model === 'a' ? 40 : 20}s.` } })) as unknown as typeof fetch });
+    await expect(all.generateJson({ system: '', parts: [], schema: { type: 'OBJECT' } })).rejects.toMatchObject({ code: 'RATE_LIMITED', retryAfterSeconds: 20 });
+  });
+
   it('enforces the free-tier limit client-side without spending quota', async () => {
     const fetchImpl = vi.fn(async () => gemini({ ok: 1 }));
     let t = 1_000_000;
-    const c = new GeminiClient({ apiKey: KEY, model: 'm', fetchImpl: fetchImpl as unknown as typeof fetch, maxRequestsPerMinute: 2, now: () => t });
+    const c = new GeminiClient({ apiKey: KEY, model: 'm', fallbackModels: [], fetchImpl: fetchImpl as unknown as typeof fetch, maxRequestsPerMinute: 2, now: () => t });
     await c.generateJson({ system: '', parts: [], schema: { type: 'OBJECT' } });
     await c.generateJson({ system: '', parts: [], schema: { type: 'OBJECT' } });
     await expect(c.generateJson({ system: '', parts: [], schema: { type: 'OBJECT' } })).rejects.toMatchObject({ code: 'RATE_LIMITED', retryAfterSeconds: 60 });
@@ -173,12 +189,13 @@ describe('photo recognition', () => {
 
   const detection = {
     isFood: true,
-    description: 'Grilled chicken with rice and broccoli',
+    // Gemini is asked for Spanish names (the catalog is Spanish).
+    description: 'Pollo a la plancha con arroz y brócoli',
     items: [
-      { name: 'chicken breast, grilled', searchTerms: ['chicken breast', 'chicken'], estimatedGrams: 150, confidence: 0.9, preparation: 'grilled', calories: 9999 },
-      { name: 'white rice, cooked', searchTerms: ['rice'], estimatedGrams: 180, confidence: 0.85, preparation: 'cooked' },
-      { name: 'broccoli, steamed', searchTerms: ['broccoli'], estimatedGrams: 80, confidence: 0.8, preparation: 'steamed' },
-      { name: 'dragonfruit sorbet', searchTerms: ['pitaya'], estimatedGrams: 60, confidence: 0.4 },
+      { name: 'pechuga de pollo, a la plancha', searchTerms: ['pechuga de pollo', 'pollo'], estimatedGrams: 150, confidence: 0.9, preparation: 'grilled', calories: 9999 },
+      { name: 'arroz blanco, cocido', searchTerms: ['arroz'], estimatedGrams: 180, confidence: 0.85, preparation: 'cooked' },
+      { name: 'brócoli, al vapor', searchTerms: ['brócoli'], estimatedGrams: 80, confidence: 0.8, preparation: 'steamed' },
+      { name: 'sorbete de pitaya', searchTerms: ['pitaya'], estimatedGrams: 60, confidence: 0.4 },
     ],
   };
 
@@ -237,6 +254,31 @@ describe('photo recognition', () => {
     await expect(recognizeMealPhoto(JPEG)).rejects.toMatchObject({ code: 'UNAVAILABLE', details: { code: 'RATE_LIMITED' } });
     configureAiFetch((async () => gemini({ nonsense: true })) as unknown as typeof fetch);
     await expect(recognizeMealPhoto(JPEG)).rejects.toMatchObject({ code: 'UNAVAILABLE', details: { code: 'INVALID_RESPONSE' } });
+  });
+
+  it('refines the list from user feedback, re-matching locally and keeping the same photo', async () => {
+    const bodies: string[] = [];
+    const corrected = {
+      ...detection,
+      reply: 'He añadido el huevo frito.',
+      items: [...detection.items.slice(0, 3), { name: 'huevo entero, frito', searchTerms: ['huevo frito', 'huevo'], estimatedGrams: 50, confidence: 0.8, preparation: 'fried' }],
+    };
+    await enableAi(async (_url: unknown, init: unknown) => {
+      bodies.push((init as RequestInit).body as string);
+      return gemini(bodies.length === 1 ? detection : corrected);
+    });
+    const r = await recognizeMealPhoto(JPEG);
+    const r2 = await refineMealPhoto({ photoId: r.photoId!, feedback: 'te has dejado el huevo frito', current: r.items.map((i) => ({ name: i.detected.name, grams: i.grams })), mealType: 'dinner' });
+    expect(r2.reply).toMatch(/huevo/);
+    expect(r2.photoId).toBe(r.photoId);
+    expect(r2.items).toHaveLength(4);
+    expect(r2.items[3]!.matches[0]?.food.name).toMatch(/^Huevo entero, frito/);
+    const sent = JSON.parse(bodies[1]!);
+    expect(JSON.stringify(sent)).toContain('te has dejado el huevo frito');
+    expect(JSON.stringify(sent)).toContain('pechuga de pollo, a la plancha'); // current list is sent
+    expect(sent.input[0]).toMatchObject({ type: 'image' }); // same photo
+    await expect(refineMealPhoto({ photoId: 'nope', feedback: 'x', current: [] })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(refineMealPhoto({ photoId: r.photoId!, feedback: '   ', current: [] })).rejects.toMatchObject({ code: 'VALIDATION' });
   });
 
   it('purges discarded (unreferenced) photos', async () => {

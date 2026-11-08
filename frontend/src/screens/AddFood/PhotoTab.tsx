@@ -1,4 +1,4 @@
-import { Images, Minus, Plus, RotateCcw, X } from 'lucide-react'
+import { ArrowUp, Images, Minus, Plus, RotateCcw, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -18,7 +18,7 @@ import { capitalize } from '@/lib/dates'
 import { TO_MEAL, kcal } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { api } from '@/services'
-import { useAiStatus, useAnalyzePhoto, useFoodPreview, useFoodSearch, useLogPhotoMeal, usePhotoTotals, useSetPhotoEnabled } from '@/services/queries'
+import { useAiStatus, useAnalyzePhoto, useRefinePhoto, useFoodPreview, useFoodSearch, useLogPhotoMeal, usePhotoTotals, useSetPhotoEnabled } from '@/services/queries'
 
 interface ItemState {
   id: string
@@ -27,6 +27,28 @@ interface ItemState {
   matches: Food[]
   foodId: string | null
   grams: number
+  /** The user chose this food themselves — a Gemini correction must not overwrite it. */
+  userPicked?: boolean
+}
+
+const norm = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+
+/** Apply Gemini's corrected list, keeping foods the user picked by hand for items that are still there. */
+function mergeCorrection(prev: ItemState[], next: PhotoAnalysis['items']): ItemState[] {
+  return next.map((n) => {
+    const old = prev.find((p) => norm(p.name) === norm(n.name))
+    const keepPick = old?.userPicked && old.foodId ? old : null
+    const picked = keepPick ? old!.matches.find((m) => m.id === old!.foodId) : undefined
+    return {
+      id: n.id,
+      name: n.name,
+      confidence: n.confidence,
+      matches: picked && !n.matches.some((m) => m.id === picked.id) ? [picked, ...n.matches] : n.matches,
+      foodId: keepPick ? keepPick.foodId : n.selectedFoodId,
+      grams: Math.max(1, Math.round(n.estimatedGrams)),
+      ...(keepPick ? { userPicked: true } : {}),
+    }
+  })
 }
 
 const GRAM = { label: 'g', grams: 1 }
@@ -169,6 +191,7 @@ export function PhotoTab({ meal: initialMeal, date }: { meal: MealType; date: st
       <PhotoReview
         preview={preview}
         result={result}
+        setResult={setResult}
         items={items}
         setItems={setItems}
         meal={meal}
@@ -215,6 +238,7 @@ export function PhotoTab({ meal: initialMeal, date }: { meal: MealType; date: st
 function PhotoReview({
   preview,
   result,
+  setResult,
   items,
   setItems,
   meal,
@@ -225,6 +249,7 @@ function PhotoReview({
 }: {
   preview: string | null
   result: PhotoAnalysis
+  setResult: (r: PhotoAnalysis) => void
   items: ItemState[]
   setItems: React.Dispatch<React.SetStateAction<ItemState[]>>
   meal: MealType
@@ -234,11 +259,43 @@ function PhotoReview({
   onLogged: () => void
 }) {
   const [searchFor, setSearchFor] = useState<string | null>(null)
+  const [turns, setTurns] = useState<{ role: 'user' | 'ai'; text: string }[]>([])
+  const [feedback, setFeedback] = useState('')
+  const refine = useRefinePhoto()
+  const feedbackRef = useRef<HTMLInputElement>(null)
   const log = useLogPhotoMeal()
   const confirmed = useMemo(() => items.flatMap((i) => (i.foodId && i.grams > 0 ? [{ foodId: i.foodId, grams: i.grams }] : [])), [items])
   const totals = usePhotoTotals(confirmed)
   const unmatched = items.filter((i) => !i.foodId).length
   const update = (id: string, patch: Partial<ItemState>) => setItems((list) => list.map((i) => (i.id === id ? { ...i, ...patch } : i)))
+
+  async function sendFeedback(e?: React.FormEvent) {
+    e?.preventDefault()
+    const text = feedback.trim()
+    if (!text || refine.isPending) return
+    if (!result.photoId) {
+      toast.error('Esta foto no se guardó; haz otra para poder corregirla')
+      return
+    }
+    setFeedback('')
+    setTurns((t) => [...t, { role: 'user', text }])
+    try {
+      const r = await refine.mutateAsync({
+        photoId: result.photoId,
+        feedback: text,
+        current: items.map((i) => ({ name: i.name, grams: i.grams })),
+        previousFeedback: turns.filter((t) => t.role === 'user').map((t) => t.text),
+        meal,
+      })
+      setItems((prev) => mergeCorrection(prev, r.items))
+      setResult({ ...result, ...r, photoId: result.photoId })
+      setTurns((t) => [...t, { role: 'ai', text: r.reply || 'Hecho, he actualizado la lista.' }])
+    } catch (err) {
+      setTurns((t) => t.slice(0, -1))
+      setFeedback(text)
+      toast.error(err instanceof Error ? err.message : 'No se ha podido aplicar la corrección')
+    }
+  }
 
   async function submit() {
     try {
@@ -261,6 +318,73 @@ function PhotoReview({
             <RotateCcw className="size-3.5" /> Repetir
           </button>
         </div>
+      </Card>
+
+      <Card className="space-y-3 p-4" aria-label="Corregir a Gemini">
+        <p className="text-[14.5px] font-semibold">💬 ¿Algo no está bien? Díselo a Gemini</p>
+        {turns.length > 0 && (
+          <ul className="space-y-2" aria-live="polite">
+            {turns.map((t, i) => (
+              <li key={i} className={cn('flex', t.role === 'user' ? 'justify-end' : 'justify-start')}>
+                <span
+                  className={cn(
+                    'max-w-[85%] rounded-2xl px-3.5 py-2 text-[14px] leading-snug',
+                    t.role === 'user' ? 'rounded-br-md bg-brand-gradient font-medium text-[#3a1a05]' : 'rounded-bl-md bg-surface-2',
+                  )}
+                >
+                  {t.role === 'ai' && <span aria-hidden className="emoji mr-1">✨</span>}
+                  {t.text}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {refine.isPending && (
+          <p className="flex items-center gap-2 text-[13px] text-muted" role="status">
+            <Spinner className="size-4" /> Gemini está corrigiendo la lista…
+          </p>
+        )}
+        {turns.length === 0 && (
+          <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1">
+            {[
+              ['Te has dejado algo', 'Te has dejado '],
+              ['Esto no es…', 'No es '],
+              ['La ración era más pequeña', 'La ración era más pequeña'],
+              ['Quita algo', 'Quita '],
+            ].map(([ex, prefill]) => (
+              <button
+                key={ex}
+                type="button"
+                onClick={() => {
+                  setFeedback(prefill!)
+                  feedbackRef.current?.focus()
+                }}
+                className="h-9 shrink-0 rounded-full border border-border bg-surface px-3.5 text-[12.5px] font-medium"
+              >
+                {ex}
+              </button>
+            ))}
+          </div>
+        )}
+        <form onSubmit={sendFeedback} className="flex items-center gap-2">
+          <label htmlFor="photo-feedback" className="sr-only">
+            Corrección para Gemini
+          </label>
+          <input
+            ref={feedbackRef}
+            id="photo-feedback"
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            placeholder="Ej.: te has dejado el huevo frito"
+            maxLength={300}
+            enterKeyHint="send"
+            autoComplete="off"
+            className="h-11 min-w-0 flex-1 rounded-full border border-border bg-surface px-4 text-base outline-none placeholder:text-muted/80 focus:border-primary focus:ring-4 focus:ring-primary/15"
+          />
+          <Button type="submit" size="icon" aria-label="Enviar corrección" disabled={!feedback.trim() || refine.isPending}>
+            <ArrowUp className="size-5" />
+          </Button>
+        </form>
       </Card>
 
       <p className="rounded-2xl bg-meal-lunch px-4 py-3 text-[13px] leading-relaxed text-foreground/80">
@@ -303,7 +427,7 @@ function PhotoReview({
         onPick={(food) => {
           setItems((list) =>
             list.map((i) =>
-              i.id === searchFor ? { ...i, foodId: food.id, matches: [food, ...i.matches.filter((m) => m.id !== food.id)] } : i,
+              i.id === searchFor ? { ...i, foodId: food.id, userPicked: true, matches: [food, ...i.matches.filter((m) => m.id !== food.id)] } : i,
             ),
           )
           setSearchFor(null)
@@ -353,7 +477,7 @@ function PhotoItemCard({
             <select
               id={`match-${item.id}`}
               value={item.foodId ?? ''}
-              onChange={(e) => (e.target.value === '__search' ? onSearch() : onChange({ foodId: e.target.value || null }))}
+              onChange={(e) => (e.target.value === '__search' ? onSearch() : onChange({ foodId: e.target.value || null, userPicked: true }))}
               className="h-12 w-full rounded-2xl border border-border bg-surface px-4 text-base outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
             >
               {!item.foodId && <option value="">Elige una coincidencia…</option>}

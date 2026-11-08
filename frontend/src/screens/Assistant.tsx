@@ -84,9 +84,9 @@ export function AssistantScreen() {
   }
 
   return (
-    <div className="flex min-h-[calc(100dvh-var(--nav-height)-var(--safe-bottom)-var(--safe-top)-40px)] flex-col">
+    <div className="flex min-h-[calc(100dvh-var(--nav-offset)-var(--safe-top)-40px)] flex-col">
       <PageHeader
-        title="Asistente"
+        title="Coach"
         emoji="✨"
         subtitle={aiOn ? 'Habla con Gemini sobre tu alimentación, tus objetivos y tus comidas' : 'Ideas de comidas según tus objetivos y tu diario de hoy'}
         actions={
@@ -118,7 +118,7 @@ export function AssistantScreen() {
                   valores nutricionales siempre se calculan con la base de datos de alimentos. Prueba una de las preguntas de abajo.
                 </p>
                 <Button variant="outline" size="sm" className="mt-3" onClick={() => navigate('/settings#ai')}>
-                  <Settings2 className="size-4" /> Activar el asistente de IA Gemini
+                  <Settings2 className="size-4" /> Activar el coach con IA (Gemini)
                 </Button>
               </>
             )}
@@ -167,7 +167,7 @@ export function AssistantScreen() {
         <div ref={endRef} />
       </div>
 
-      <div className="sticky bottom-[calc(var(--nav-height)+var(--safe-bottom))] -mx-4 bg-background/90 px-4 pb-3 pt-2 backdrop-blur-xl sm:mx-0 sm:px-0">
+      <div className="sticky bottom-[var(--nav-offset)] -mx-4 bg-background/90 px-4 pb-3 pt-2 backdrop-blur-xl sm:mx-0 sm:px-0">
         {prompts.data && (
           <div className="no-scrollbar -mx-4 mb-2 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0" aria-label="Preguntas sugeridas">
             {prompts.data.map((p) => (

@@ -51,6 +51,8 @@
   --nav-height: 64px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  /* Space taken by the bottom tab bar; 0 while the on-screen keyboard is open. */
+  --nav-offset: calc(var(--nav-height) + var(--safe-bottom));
   color-scheme: light;
 }
 
@@ -168,4 +170,13 @@
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* On-screen keyboard open (touch devices): hide the tab bar so it isn't pushed up over the content. */
+.kb-open {
+  --nav-offset: 0px;
+}
+.kb-open [data-bottom-nav] {
+  transform: translateY(110%);
+  pointer-events: none;
 }

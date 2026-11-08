@@ -2,6 +2,7 @@ import { WifiOff } from 'lucide-react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useOnline } from '@/lib/useOnline'
+import { useKeyboardOpenClass } from '@/lib/useKeyboard'
 import { BottomNavigation } from './BottomNavigation'
 
 export function OfflineIndicator() {
@@ -16,6 +17,7 @@ export function OfflineIndicator() {
 }
 
 export function AppShell() {
+  useKeyboardOpenClass()
   const { pathname } = useLocation()
   useEffect(() => {
     window.scrollTo({ top: 0 })
@@ -25,7 +27,7 @@ export function AppShell() {
       <div className="sticky top-0 z-30 pt-[var(--safe-top)] bg-background/85 backdrop-blur-xl">
         <OfflineIndicator />
       </div>
-      <main className="mx-auto w-full max-w-lg px-4 pb-[calc(var(--nav-height)+var(--safe-bottom)+28px)] sm:px-6 lg:max-w-2xl">
+      <main className="mx-auto w-full max-w-lg px-4 pb-[calc(var(--nav-offset)+28px)] sm:px-6 lg:max-w-2xl">
         <Outlet />
       </main>
       <BottomNavigation />
