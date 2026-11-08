@@ -13,7 +13,15 @@ export type IsoTimestamp = string;
 // Food
 // ---------------------------------------------------------------------------
 
-export type FoodSourceType = 'usda_sr_legacy' | 'open_food_facts' | 'user' | 'recipe';
+/**
+ * - usda_sr_legacy: USDA FoodData Central SR Legacy (seed)
+ * - bedca: Spanish food composition database, AESAN/BEDCA (seed; non-commercial use with attribution, values unmodified)
+ * - ciqual: French food composition table, ANSES-CIQUAL (seed; Licence Ouverte / Etalab)
+ */
+export type FoodSourceType = 'usda_sr_legacy' | 'bedca' | 'ciqual' | 'open_food_facts' | 'user' | 'recipe';
+
+/** Source types bundled with the app (re-creatable; excluded from backups). */
+export const SEED_SOURCE_TYPES: readonly FoodSourceType[] = ['usda_sr_legacy', 'bedca', 'ciqual'];
 
 /** Provenance and licensing of a food's data. Always preserved for attribution. */
 export interface DataSource {
@@ -532,6 +540,10 @@ export interface PhotoRecognitionItem {
   grams: number;
   /** Nutrients for `grams` of the selected food (empty when unmatched). */
   nutrients: NutrientValues;
+  /** Set when `grams` came from the food's standard portion (e.g. 0.5 × "1 tortilla entera (≈ 700 g)"). */
+  portion?: { count: number; servingLabel: string; grams: number };
+  /** The AI described a portion that the matched food has no serving for (grams = visual estimate). */
+  requestedPortion?: { count: number; unit: string };
 }
 
 export interface PhotoRecognitionResult {

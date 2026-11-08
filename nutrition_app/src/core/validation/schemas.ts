@@ -63,7 +63,7 @@ export const servingSchema = z.object({
 export const quantitySchema = z.object({ amount: z.number().finite().positive(), unit: quantityUnitSchema, servingId: z.string().optional() });
 
 export const dataSourceSchema = z.object({
-  type: z.enum(['usda_sr_legacy', 'open_food_facts', 'user', 'recipe']),
+  type: z.enum(['usda_sr_legacy', 'bedca', 'ciqual', 'open_food_facts', 'user', 'recipe']),
   sourceId: z.string().optional(),
   originalName: z.string().optional(),
   attribution: z.string(),

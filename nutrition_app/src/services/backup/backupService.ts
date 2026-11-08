@@ -1,4 +1,5 @@
 import { ZodError } from 'zod';
+import { SEED_SOURCE_TYPES } from '../../core/types/domain';
 import type { BackupPayload, CachedProduct, DailyGoals, Food, MealEntry, Recipe, UserPreferences } from '../../core/types/domain';
 import { BACKUP_FORMAT, BACKUP_SCHEMA_VERSION } from '../../core/types/domain';
 import { APP_VERSION } from '../../core/constants/app';
@@ -32,7 +33,7 @@ export async function exportBackup(opts: ExportOptions = {}): Promise<BackupPayl
     return db.transaction('r', [db.foods, db.mealEntries, db.recipes, db.goals, db.preferences, db.cachedProducts], async () => {
       const foodRecs = await db.foods.toArray();
       const foods: Food[] = foodRecs
-        .filter((f) => opts.includeSeedFoods || f.source.type !== 'usda_sr_legacy' || f.isArchived)
+        .filter((f) => opts.includeSeedFoods || !SEED_SOURCE_TYPES.includes(f.source.type) || f.isArchived)
         .map(({ searchTokens: _s, ...f }) => f);
       const data: BackupPayload['data'] = {
         foods,

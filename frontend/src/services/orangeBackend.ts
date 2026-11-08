@@ -157,6 +157,8 @@ function quantityToUI(q: B.Quantity, servings: B.ServingDefinition[], grams: num
 
 const SOURCE: Record<B.FoodSourceType, FoodSource> = {
   usda_sr_legacy: 'catalog',
+  bedca: 'catalog',
+  ciqual: 'catalog',
   open_food_facts: 'barcode',
   user: 'custom',
   recipe: 'recipe',
@@ -165,6 +167,8 @@ const SOURCE: Record<B.FoodSourceType, FoodSource> = {
 /** Spanish provenance labels (the stored citation stays in the backend data). */
 const ATTRIBUTION_ES: Partial<Record<B.FoodSourceType, string>> = {
   usda_sr_legacy: 'Datos: USDA FoodData Central (SR Legacy)',
+  bedca: 'Datos: BEDCA, Base de Datos Española de Composición de Alimentos (AESAN)',
+  ciqual: 'Datos: tabla CIQUAL (ANSES, Francia)',
   open_food_facts: 'Datos de Open Food Facts (licencia ODbL)',
   user: 'Alimento creado por ti',
   recipe: 'Receta',
@@ -570,6 +574,8 @@ function photoResultToUI(r: B.PhotoRecognitionResult): PhotoAnalysis {
       preparation: i.detected.preparation,
       matches: i.matches.map((m) => foodToUI(m.food, m.isFavorite)),
       selectedFoodId: i.selectedFoodId,
+      grams: i.grams,
+      ...(i.portion ? { portion: { count: i.portion.count, servingLabel: i.portion.servingLabel } } : {}),
     })),
   }
 }
@@ -584,7 +590,7 @@ const photoService = initialized({
     }
     return photoResultToUI(r)
   },
-  async refine({ photoId, feedback, current, previousFeedback, meal }: { photoId: string; feedback: string; current: { name: string; grams: number }[]; previousFeedback?: string[]; meal: MealType }) {
+  async refine({ photoId, feedback, current, previousFeedback, meal }: { photoId: string; feedback: string; current: { name: string; grams: number; foodId?: string | null }[]; previousFeedback?: string[]; meal: MealType }) {
     let r: B.PhotoRecognitionResult
     try {
       r = await B.refineMealPhoto({ photoId, feedback, current, ...(previousFeedback ? { previousFeedback } : {}), mealType: toBMeal(meal) })

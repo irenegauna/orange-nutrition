@@ -8,7 +8,7 @@ import {
   getPhotoBlob,
   getSmartSuggestions,
   logPhotoMeal,
-  recognizeMealPhoto, refineMealPhoto,
+  recognizeMealPhoto, refineMealPhoto, resolvePortion,
   revokeAiConsent,
   setAiApiKey,
   testAiConnection,
@@ -344,6 +344,19 @@ describe('AI suggestions', () => {
     expect(r2.source).toBe('rules');
     expect(r2.rejected).toHaveLength(1);
     expect(r2.recommendations.length).toBeGreaterThan(0);
+  });
+});
+
+describe('portions → grams (database servings, not AI guesses)', () => {
+  const tortilla = { servings: [{ id: 'a', label: '1 pincho (≈ 100 g)', grams: 100 }, { id: 'b', label: '1 ración (≈ 150 g)', grams: 150, isDefault: true }, { id: 'c', label: '1 tortilla entera (≈ 700 g)', grams: 700 }] };
+  it('converts fractions and counts with the food\'s own servings', () => {
+    expect(resolvePortion(tortilla, { count: 0.5, unit: 'tortilla entera' })).toMatchObject({ grams: 350, servingLabel: '1 tortilla entera (≈ 700 g)' });
+    expect(resolvePortion(tortilla, { count: 1, unit: 'pincho' })?.grams).toBe(100);
+    expect(resolvePortion(tortilla, { count: 1, unit: 'ración' })?.grams).toBe(150); // generic → default serving
+    expect(resolvePortion({ servings: [{ id: 'x', label: '1 croqueta (≈ 30 g)', grams: 30, isDefault: true }] }, { count: 2, unit: 'croquetas' })?.grams).toBe(60);
+  });
+  it('returns null instead of guessing when no serving matches', () => {
+    expect(resolvePortion({ servings: [{ id: 'x', label: '1 caña (200 ml)', grams: 200, isDefault: true }] }, { count: 1, unit: 'botella' })).toBeNull();
   });
 });
 

@@ -381,6 +381,10 @@ export interface PhotoItem {
   matches: Food[]
   /** Pre-selected match; null when nothing in the database matched. */
   selectedFoodId: string | null
+  /** Grams for the match (from a standard portion when `portion` is set, else the visual estimate). */
+  grams: number
+  /** e.g. { count: 0.5, servingLabel: '1 tortilla entera (≈ 700 g)' } — grams came from the database portion. */
+  portion?: { count: number; servingLabel: string }
 }
 
 export interface PhotoAnalysis {

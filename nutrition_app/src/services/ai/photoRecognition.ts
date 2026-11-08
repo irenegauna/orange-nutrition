@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { DetectedFood, FoodSearchResult, LocalDate, MealEntry, MealType, PhotoRecognitionItem, PhotoRecognitionResult, Quantity } from '../../core/types/domain';
+import type { DetectedFood, Food, FoodSearchResult, LocalDate, MealEntry, MealType, PhotoRecognitionItem, PhotoRecognitionResult, Quantity } from '../../core/types/domain';
 import { nutrientsForGrams, nutrientsForQuantity, sumNutrients } from '../../core/nutrition/calculations';
 import { assertLocalDate, nowIso } from '../../core/utils/dates';
 import { createId } from '../../core/utils/ids';
@@ -21,6 +21,7 @@ For each distinct food or drink visible:
 - "estimatedGrams": your best visual estimate of the edible weight in grams, using cues like plate size (~26 cm), cutlery and hands.
 - "confidence": 0 to 1.
 - "preparation": raw, cooked, grilled, fried, baked, boiled, roasted, steamed, dried, or unknown (keep these English keywords).
+- "portion" (optional): when the amount is naturally a number or fraction of a standard unit, give it as {"count": number, "unit": short Spanish unit}, e.g. {"count": 0.5, "unit": "tortilla entera"}, {"count": 2, "unit": "croqueta"}, {"count": 1, "unit": "pincho"}, {"count": 1, "unit": "caña"}, {"count": 3, "unit": "loncha"}, {"count": 1, "unit": "ración"}. The app converts it to grams with its own standard portion weights; still give "estimatedGrams" as a fallback.
 For a mixed dish that cannot be separated (e.g. lasaña), list it as one item and add its main components as Spanish searchTerms.
 NEVER output calories or nutrient values. If the photo contains no food, set "isFood" to false and return an empty "items" array.`;
 
@@ -40,6 +41,7 @@ const SCHEMA: GeminiSchema = {
           estimatedGrams: { type: 'NUMBER' },
           confidence: { type: 'NUMBER' },
           preparation: { type: 'STRING' },
+          portion: { type: 'OBJECT', properties: { count: { type: 'NUMBER' }, unit: { type: 'STRING' } }, required: ['count', 'unit'] },
         },
         required: ['name', 'searchTerms', 'estimatedGrams', 'confidence'],
       },
@@ -54,7 +56,41 @@ const itemSchema = z.object({
   estimatedGrams: z.number().finite().catch(100),
   confidence: z.number().finite().catch(0.5),
   preparation: z.string().optional().catch(undefined).transform((v) => v?.slice(0, 40)),
+  portion: z
+    .object({ count: z.number().finite().positive().max(50), unit: z.string().trim().min(1).max(60) })
+    .optional()
+    .catch(undefined),
 });
+
+/** Words that say "a serving" without naming the unit → use the food's default serving. */
+const GENERIC_PORTION = new Set(['racion', 'raciones', 'porcion', 'porciones', 'plato', 'platos', 'unidad', 'unidades', 'pieza', 'piezas', 'serving', 'portion']);
+const PORTION_NOISE = new Set(['aprox', 'g', 'ml', 'de', 'del', 'la', 'el', 'un', 'una', 'cm', 'diametro', 'largo', 'grosor']);
+
+/**
+ * Converts "0.5 × tortilla entera" into grams using the FOOD'S OWN standard servings (database data,
+ * not the AI's guess). Returns null when no serving matches the unit.
+ */
+export function resolvePortion(
+  food: Pick<Food, 'servings'>,
+  portion: { count: number; unit: string },
+): { grams: number; servingLabel: string; count: number } | null {
+  if (!(portion.count > 0) || !food.servings.length) return null;
+  const unitTokens = tokenize(portion.unit).filter((t) => !PORTION_NOISE.has(t) && !/^\d/.test(t));
+  if (!unitTokens.length) return null;
+  let best: { s: Food['servings'][number]; score: number } | null = null;
+  for (const s of food.servings) {
+    const labelTokens = new Set(tokenize(s.label).filter((t) => !PORTION_NOISE.has(t) && !/^\d/.test(t)));
+    const hits = unitTokens.filter((t) => labelTokens.has(t)).length;
+    const score = hits / unitTokens.length;
+    if (hits > 0 && (!best || score > best.score)) best = { s, score };
+  }
+  if (!best && unitTokens.every((t) => GENERIC_PORTION.has(t))) {
+    const def = food.servings.find((s) => s.isDefault) ?? food.servings[0]!;
+    best = { s: def, score: 1 };
+  }
+  if (!best || !(best.s.grams > 0)) return null;
+  return { grams: Math.round(portion.count * best.s.grams), servingLabel: best.s.label, count: portion.count };
+}
 
 /** Lenient: invalid items are dropped individually, long fields are truncated, at most 20 items kept. */
 const responseSchema = z.object({
@@ -172,8 +208,18 @@ async function buildResult(data: z.infer<typeof responseSchema>, photoId: string
     };
     const matches = await matchDetectedFood(detected);
     const best = matches[0] ?? null;
-    const grams = Math.round(detected.estimatedGrams);
-    items.push({ id: createId('det'), detected, matches, selectedFoodId: best?.food.id ?? null, grams, nutrients: best ? nutrientsForGrams(best.food, grams) : {} });
+    // Prefer the database's standard portion ("½ tortilla entera" → 0.5 × its weight) over the visual guess.
+    const portion = best && it.portion ? resolvePortion(best.food, it.portion) : null;
+    const grams = portion ? portion.grams : Math.round(detected.estimatedGrams);
+    items.push({
+      id: createId('det'),
+      detected,
+      matches,
+      selectedFoodId: best?.food.id ?? null,
+      grams,
+      nutrients: best ? nutrientsForGrams(best.food, grams) : {},
+      ...(portion ? { portion } : it.portion ? { requestedPortion: it.portion } : {}),
+    });
   }
   const matched = items.filter((i) => i.selectedFoodId);
   return {
@@ -197,7 +243,7 @@ export interface RefinePhotoInput {
   /** What the user says, e.g. "te has dejado el huevo" or "el arroz eran unos 100 g". */
   feedback: string;
   /** The list as the user currently sees it (after any manual edits). */
-  current: { name: string; grams: number }[];
+  current: { name: string; grams: number; foodId?: string | null }[];
   /** Earlier corrections in this conversation, oldest first. */
   previousFeedback?: string[];
   mealType?: MealType;
@@ -215,7 +261,16 @@ export async function refineMealPhoto(input: RefinePhotoInput): Promise<PhotoRec
   const settings = await getAiSettings();
   const photo = await getDb().photos.get(input.photoId);
   if (!photo) throw new DataError('NOT_FOUND', 'La foto ya no está disponible; haz otra');
-  const current = input.current.slice(0, 20).map((c) => ({ name: c.name.slice(0, 120), grams: Math.round(c.grams) }));
+  // Send each item's standard portions so "solo me comí la mitad" / "eran dos" can be expressed as a portion.
+  const currentFoods = await foodRepository.getMany(input.current.flatMap((c) => (c.foodId ? [c.foodId] : [])));
+  const current = input.current.slice(0, 20).map((c) => {
+    const food = c.foodId ? currentFoods.get(c.foodId) : undefined;
+    return {
+      name: c.name.slice(0, 120),
+      grams: Math.round(c.grams),
+      ...(food ? { databaseFood: food.name, standardPortions: food.servings.slice(0, 6).map((s) => `${s.label} = ${Math.round(s.grams)} g`) } : {}),
+    };
+  });
   const earlier = (input.previousFeedback ?? []).slice(-5).map((f) => f.slice(0, 300));
 
   let raw: unknown;
@@ -227,13 +282,14 @@ The user is reviewing your previous answer and sends a correction. Return the FU
 - keep the items the user did not mention, with their current grams;
 - add foods the user says you missed, remove the ones they say are wrong, and apply any name, preparation or quantity changes they give;
 - the user knows what they ate: trust their correction over your visual impression;
+- when the user gives an amount as a fraction or count ("solo me comí la mitad", "media tortilla", "eran dos croquetas", "una caña"), return it as "portion" using a unit from that item's "standardPortions" when listed (e.g. {"count": 0.5, "unit": "tortilla entera"}); otherwise use a natural Spanish unit;
 - also return "reply": one short, friendly sentence in Spanish (Spain) saying what you changed.`,
       parts: [
         { inline_data: { mime_type: photo.mimeType, data: bytesToBase64(photo.data) } },
         {
           text: [
             `Meal: ${input.mealType ?? 'meal'}.`,
-            `Current list (name, grams): ${JSON.stringify(current)}`,
+            `Current list (name, grams, database food and its standard portions): ${JSON.stringify(current)}`,
             ...(earlier.length ? [`Earlier corrections: ${JSON.stringify(earlier)}`] : []),
             `User correction: ${JSON.stringify(feedback)}`,
           ].join('\n'),

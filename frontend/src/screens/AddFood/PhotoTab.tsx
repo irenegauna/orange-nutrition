@@ -29,6 +29,15 @@ interface ItemState {
   grams: number
   /** The user chose this food themselves — a Gemini correction must not overwrite it. */
   userPicked?: boolean
+  /** Shown under the grams when they came from a standard portion, e.g. "½ × 1 tortilla entera (≈ 700 g)". */
+  portionNote?: string
+}
+
+const FRACTIONS: Record<string, string> = { '0.25': '¼', '0.5': '½', '0.75': '¾', '0.33': '⅓', '0.67': '⅔', '1.5': '1½', '2.5': '2½' }
+const portionNote = (p?: { count: number; servingLabel: string }) => {
+  if (!p) return undefined
+  const k = String(Math.round(p.count * 100) / 100)
+  return `${FRACTIONS[k] ?? k.replace('.', ',')} × ${p.servingLabel}`
 }
 
 const norm = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
@@ -45,8 +54,9 @@ function mergeCorrection(prev: ItemState[], next: PhotoAnalysis['items']): ItemS
       confidence: n.confidence,
       matches: picked && !n.matches.some((m) => m.id === picked.id) ? [picked, ...n.matches] : n.matches,
       foodId: keepPick ? keepPick.foodId : n.selectedFoodId,
-      grams: Math.max(1, Math.round(n.estimatedGrams)),
+      grams: Math.max(1, Math.round(n.grams)),
       ...(keepPick ? { userPicked: true } : {}),
+      ...(n.portion && !keepPick ? { portionNote: portionNote(n.portion) } : {}),
     }
   })
 }
@@ -91,7 +101,8 @@ export function PhotoTab({ meal: initialMeal, date }: { meal: MealType; date: st
           confidence: i.confidence,
           matches: i.matches,
           foodId: i.selectedFoodId,
-          grams: Math.max(1, Math.round(i.estimatedGrams)),
+          grams: Math.max(1, Math.round(i.grams)),
+          ...(i.portion ? { portionNote: portionNote(i.portion) } : {}),
         })),
       )
     } catch (err) {
@@ -283,7 +294,7 @@ function PhotoReview({
       const r = await refine.mutateAsync({
         photoId: result.photoId,
         feedback: text,
-        current: items.map((i) => ({ name: i.name, grams: i.grams })),
+        current: items.map((i) => ({ name: i.name, grams: i.grams, foodId: i.foodId })),
         previousFeedback: turns.filter((t) => t.role === 'user').map((t) => t.text),
         meal,
       })
@@ -450,7 +461,7 @@ function PhotoItemCard({
 }) {
   const food = item.matches.find((m) => m.id === item.foodId) ?? null
   const preview = useFoodPreview(item.foodId, { amount: item.grams, serving: GRAM })
-  const setGrams = (g: number) => onChange({ grams: Math.max(0, Math.round(g)) })
+  const setGrams = (g: number) => onChange({ grams: Math.max(0, Math.round(g)), portionNote: undefined })
   const pct = Math.round(item.confidence * 100)
 
   return (
@@ -477,7 +488,7 @@ function PhotoItemCard({
             <select
               id={`match-${item.id}`}
               value={item.foodId ?? ''}
-              onChange={(e) => (e.target.value === '__search' ? onSearch() : onChange({ foodId: e.target.value || null, userPicked: true }))}
+              onChange={(e) => (e.target.value === '__search' ? onSearch() : onChange({ foodId: e.target.value || null, userPicked: true, portionNote: undefined }))}
               className="h-12 w-full rounded-2xl border border-border bg-surface px-4 text-base outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
             >
               {!item.foodId && <option value="">Elige una coincidencia…</option>}
@@ -496,6 +507,12 @@ function PhotoItemCard({
           )}
         </div>
 
+        {item.portionNote && (
+          <p className="-mb-1 text-[12.5px] text-sage">
+            <span aria-hidden className="emoji mr-1">📏</span>
+            {item.portionNote} · ración estándar de la base de datos
+          </p>
+        )}
         <div className="flex items-center gap-3">
           <div className="flex flex-1 items-center gap-1 rounded-2xl bg-surface-2 p-1">
             <button type="button" aria-label={`Menos gramos de ${item.name}`} onClick={() => setGrams(item.grams - 10)} className="grid size-11 place-items-center rounded-xl bg-surface shadow-sm">

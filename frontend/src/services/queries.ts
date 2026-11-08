@@ -200,7 +200,7 @@ export const useAnalyzePhoto = () =>
 
 export const useRefinePhoto = () =>
   useMutation({
-    mutationFn: (v: { photoId: string; feedback: string; current: { name: string; grams: number }[]; previousFeedback?: string[]; meal: MealType }) => api.photo.refine(v),
+    mutationFn: (v: { photoId: string; feedback: string; current: { name: string; grams: number; foodId?: string | null }[]; previousFeedback?: string[]; meal: MealType }) => api.photo.refine(v),
   })
 
 export const usePhotoTotals = (items: { foodId: string; grams: number }[]) =>

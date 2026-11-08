@@ -176,7 +176,8 @@ AI is **off by default**. To turn it on: (1) the user pastes their own free key 
 ```ts
 // 1. Frontend: <input type="file" accept="image/*" capture="environment"> → File
 const result = await recognizeMealPhoto(file, { mealType: 'lunch', hint: 'no dressing' });
-// 2. Show result.items: detected.name, detected.estimatedGrams (an ESTIMATE), matches[] (local foods),
+// 2. Show result.items: item.grams (from a catalog portion when item.portion is set — "½ × 1 tortilla entera (≈ 700 g)" —
+//    otherwise detected.estimatedGrams, an ESTIMATE), matches[] (local foods),
 //    selectedFoodId (may be null → let the user search or create a food), nutrients for the current grams.
 //    The user can change the match, edit grams, or remove items.
 // 3. Log only what the user confirmed:
@@ -186,7 +187,8 @@ await logPhotoMeal({ date: today(), mealType: 'lunch', photoId: result.photoId,
 
 | Function | Description |
 |---|---|
-| `refineMealPhoto({ photoId, feedback, current, previousFeedback?, mealType? })` | User correction ("te has dejado el huevo"): sends the same stored photo, the current list and the correction; returns the full corrected list re-matched to local foods, plus a short `reply`. Nothing is logged. |
+| `refineMealPhoto({ photoId, feedback, current: { name, grams, foodId? }[], previousFeedback?, mealType? })` | User correction ("te has dejado el huevo", "solo me he comido la mitad"): sends the same stored photo, the current list (with each matched food's standard portions, e.g. `1 tortilla entera = 700 g`) and the correction; returns the full corrected list re-matched to local foods, plus a short `reply`. Nothing is logged. |
+| `resolvePortion(food, { count, unit })` | Turns a portion ("½ tortilla entera", "2 croquetas", "1 ración") into grams using the food's own catalog servings; `null` when no serving matches (the item then keeps Gemini's visual estimate and carries `requestedPortion`). |
 | `recognizeMealPhoto(image: Blob \| ArrayBuffer, { mealType?, hint?, savePhoto? = true }): Promise<PhotoRecognitionResult>` | Downscales the photo to ≤ 1024 px JPEG on-device, sends it to Gemini, then matches each item to local foods (preferring cooked forms for "grilled/cooked", never dry weights unless stated). Nothing is logged. Throws `DataError('UNAVAILABLE', …, { code })` when AI is off or the provider fails (`RATE_LIMITED`, `OFFLINE`, `INVALID_KEY`…). Fall back to manual search. |
 | `matchDetectedFood(detected)` | Re-run matching (e.g. after the user renames an item). |
 | `logPhotoMeal({ date, mealType, items: [{ foodId, grams? \| quantity? }], photoId?, note? })` | Atomic. Entries get `origin: 'photo_ai'` and `photoId`. |
