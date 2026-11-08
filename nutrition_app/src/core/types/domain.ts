@@ -532,6 +532,8 @@ export interface DetectedFood {
   /** 0..1 as reported by the model (not calibrated). */
   confidence: number;
   preparation?: string;
+  /** The mix this is an ingredient of, e.g. "pisto" for its calabacín. */
+  partOf?: string;
 }
 
 export interface PhotoRecognitionItem {

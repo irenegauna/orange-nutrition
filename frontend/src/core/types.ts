@@ -390,6 +390,8 @@ export interface PhotoItem {
   id: string
   /** What the AI called it, e.g. "chicken breast, grilled". */
   name: string
+  /** The mix it belongs to, e.g. "pisto" for its calabacín. */
+  partOf?: string
   /** Visual ESTIMATE from the AI — the user confirms or edits it. */
   estimatedGrams: number
   /** 0..1 as reported by the model (not calibrated). */

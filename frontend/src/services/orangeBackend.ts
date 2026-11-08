@@ -578,6 +578,7 @@ function photoResultToUI(r: B.PhotoRecognitionResult): PhotoAnalysis {
       estimatedGrams: i.detected.estimatedGrams,
       confidence: i.detected.confidence,
       preparation: i.detected.preparation,
+      ...(i.detected.partOf ? { partOf: i.detected.partOf } : {}),
       matches: i.matches.map((m) => foodToUI(m.food, m.isFavorite)),
       selectedFoodId: i.selectedFoodId,
       grams: i.grams,
@@ -596,7 +597,7 @@ const photoService = initialized({
     }
     return photoResultToUI(r)
   },
-  async refine({ photoId, feedback, current, previousFeedback, meal }: { photoId: string; feedback: string; current: { name: string; grams: number; foodId?: string | null }[]; previousFeedback?: string[]; meal: MealType }) {
+  async refine({ photoId, feedback, current, previousFeedback, meal }: { photoId: string; feedback: string; current: { name: string; grams: number; foodId?: string | null; partOf?: string }[]; previousFeedback?: string[]; meal: MealType }) {
     let r: B.PhotoRecognitionResult
     try {
       r = await B.refineMealPhoto({ photoId, feedback, current, ...(previousFeedback ? { previousFeedback } : {}), mealType: toBMeal(meal) })

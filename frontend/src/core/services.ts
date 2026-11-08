@@ -121,7 +121,7 @@ export interface PhotoService {
   refine(input: {
     photoId: string
     feedback: string
-    current: { name: string; grams: number; foodId?: string | null }[]
+    current: { name: string; grams: number; foodId?: string | null; partOf?: string }[]
     previousFeedback?: string[]
     meal: MealType
   }): Promise<PhotoAnalysis>

@@ -22,8 +22,26 @@ For each distinct food or drink visible:
 - "confidence": 0 to 1.
 - "preparation": raw, cooked, grilled, fried, baked, boiled, roasted, steamed, dried, or unknown (keep these English keywords).
 - "portion" (optional): when the amount is naturally a number or fraction of a standard unit, give it as {"count": number, "unit": short Spanish unit}, e.g. {"count": 0.5, "unit": "tortilla entera"}, {"count": 2, "unit": "croqueta"}, {"count": 1, "unit": "pincho"}, {"count": 1, "unit": "caña"}, {"count": 3, "unit": "loncha"}, {"count": 1, "unit": "ración"}. The app converts it to grams with its own standard portion weights; still give "estimatedGrams" as a fallback.
-For a mixed dish that cannot be separated (e.g. lasaña), list it as one item and add its main components as Spanish searchTerms.
+Break the meal into its components, as a dietitian would log it:
+- Every distinct food on the plate is its own item: "bacalao con pisto" → bacalao + the pisto; "filete con patatas fritas y ensalada" → filete + patatas fritas + ensalada.
+- A component that is itself a mix of ingredients (pisto, ensalada, sofrito, salsa de tomate, verduras salteadas, guarnición) is listed as its main ingredients, each as its own item with its own grams, and "partOf" set to the mix's Spanish name. E.g. pisto → calabacín, pimiento, tomate, cebolla, aceite de oliva, each with "partOf": "pisto". Include the cooking oil a home cook would use (as "aceite de oliva").
+- Keep ONE item only for a dish the app's database has as a single food (listed below) or that cannot be separated, e.g. lasaña; give it its main components as Spanish searchTerms.
 NEVER output calories or nutrient values. If the photo contains no food, set "isFood" to false and return an empty "items" array.`;
+
+/** Dishes the catalog has as one food — Gemini keeps these as one item instead of splitting them. */
+let catalogDishes: Promise<string[]> | null = null;
+function catalogDishNames(): Promise<string[]> {
+  catalogDishes ??= getDb()
+    .foods.filter((f) => f.category === 'prepared' && !f.isArchived && f.source.type !== 'user')
+    .toArray()
+    .then((fs) => [...new Set(fs.map((f) => f.name.split(',')[0]!.trim()))].sort().slice(0, 80))
+    .catch(() => []);
+  return catalogDishes;
+}
+async function systemPrompt(): Promise<string> {
+  const dishes = await catalogDishNames();
+  return dishes.length ? `${SYSTEM}\nDishes in the database as a single food: ${dishes.join('; ')}.` : SYSTEM;
+}
 
 const SCHEMA: GeminiSchema = {
   type: 'OBJECT',
@@ -42,6 +60,7 @@ const SCHEMA: GeminiSchema = {
           confidence: { type: 'NUMBER' },
           preparation: { type: 'STRING' },
           portion: { type: 'OBJECT', properties: { count: { type: 'NUMBER' }, unit: { type: 'STRING' } }, required: ['count', 'unit'] },
+          partOf: { type: 'STRING' },
         },
         required: ['name', 'searchTerms', 'estimatedGrams', 'confidence'],
       },
@@ -60,6 +79,7 @@ const itemSchema = z.object({
     .object({ count: z.number().finite().positive().max(50), unit: z.string().trim().min(1).max(60) })
     .optional()
     .catch(undefined),
+  partOf: z.string().trim().min(1).max(60).optional().catch(undefined),
 });
 
 /** Words that say "a serving" without naming the unit → use the food's default serving. */
@@ -176,7 +196,7 @@ export async function recognizeMealPhoto(image: Blob | ArrayBuffer | PreparedIma
   let raw: unknown;
   try {
     raw = await client.generateJson({
-      system: SYSTEM,
+      system: await systemPrompt(),
       parts: [
         { text: `Identify the foods in this ${opts.mealType ?? 'meal'} photo.${opts.hint ? ` User note: ${opts.hint.slice(0, 300)}` : ''}` },
         { inline_data: { mime_type: prepared.mimeType, data: bytesToBase64(prepared.data) } },
@@ -205,6 +225,7 @@ async function buildResult(data: z.infer<typeof responseSchema>, photoId: string
       estimatedGrams: Math.min(2000, Math.max(1, it.estimatedGrams)),
       confidence: Math.min(1, Math.max(0, it.confidence)),
       ...(it.preparation ? { preparation: it.preparation } : {}),
+      ...(it.partOf ? { partOf: it.partOf } : {}),
     };
     const matches = await matchDetectedFood(detected);
     const best = matches[0] ?? null;
@@ -243,7 +264,7 @@ export interface RefinePhotoInput {
   /** What the user says, e.g. "te has dejado el huevo" or "el arroz eran unos 100 g". */
   feedback: string;
   /** The list as the user currently sees it (after any manual edits). */
-  current: { name: string; grams: number; foodId?: string | null }[];
+  current: { name: string; grams: number; foodId?: string | null; partOf?: string }[];
   /** Earlier corrections in this conversation, oldest first. */
   previousFeedback?: string[];
   mealType?: MealType;
@@ -268,6 +289,7 @@ export async function refineMealPhoto(input: RefinePhotoInput): Promise<PhotoRec
     return {
       name: c.name.slice(0, 120),
       grams: Math.round(c.grams),
+      ...(c.partOf ? { partOf: c.partOf.slice(0, 60) } : {}),
       ...(food ? { databaseFood: food.name, standardPortions: food.servings.slice(0, 6).map((s) => `${s.label} = ${Math.round(s.grams)} g`) } : {}),
     };
   });
@@ -276,9 +298,9 @@ export async function refineMealPhoto(input: RefinePhotoInput): Promise<PhotoRec
   let raw: unknown;
   try {
     raw = await client.generateJson({
-      system: `${SYSTEM}
+      system: `${await systemPrompt()}
 
-The user is reviewing your previous answer and sends a correction. Return the FULL corrected list:
+The user is reviewing your previous answer and sends a correction. Return the FULL corrected list (same component rules as above — keep "partOf" on ingredients of a mix):
 - keep the items the user did not mention, with their current grams;
 - add foods the user says you missed, remove the ones they say are wrong, and apply any name, preparation or quantity changes they give;
 - the user knows what they ate: trust their correction over your visual impression;

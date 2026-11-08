@@ -23,6 +23,7 @@ import { useAiStatus, useAnalyzePhoto, useRefinePhoto, useFoodPreview, useFoodSe
 interface ItemState {
   id: string
   name: string
+  partOf?: string
   confidence: number
   matches: Food[]
   foodId: string | null
@@ -52,6 +53,7 @@ function mergeCorrection(prev: ItemState[], next: PhotoAnalysis['items']): ItemS
     return {
       id: n.id,
       name: n.name,
+      ...(n.partOf ? { partOf: n.partOf } : {}),
       confidence: n.confidence,
       matches: picked && !n.matches.some((m) => m.id === picked.id) ? [picked, ...n.matches] : n.matches,
       foodId: keepPick ? keepPick.foodId : n.selectedFoodId,
@@ -99,6 +101,7 @@ export function PhotoTab({ meal: initialMeal, date }: { meal: MealType; date: st
         r.items.map((i) => ({
           id: i.id,
           name: i.name,
+          ...(i.partOf ? { partOf: i.partOf } : {}),
           confidence: i.confidence,
           matches: i.matches,
           foodId: i.selectedFoodId,
@@ -295,7 +298,7 @@ function PhotoReview({
       const r = await refine.mutateAsync({
         photoId: result.photoId,
         feedback: text,
-        current: items.map((i) => ({ name: i.name, grams: i.grams, foodId: i.foodId })),
+        current: items.map((i) => ({ name: i.name, grams: i.grams, foodId: i.foodId, ...(i.partOf ? { partOf: i.partOf } : {}) })),
         previousFeedback: turns.filter((t) => t.role === 'user').map((t) => t.text),
         meal,
       })
@@ -474,6 +477,11 @@ function PhotoItemCard({
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-[15.5px] font-semibold leading-snug">{capitalize(item.name)}</p>
+            {item.partOf && (
+              <p className="text-[12px] text-muted">
+                <Emoji className="mr-1">{foodEmoji(item.partOf)}</Emoji>Parte de: {item.partOf.toLowerCase()}
+              </p>
+            )}
             <p className={cn('text-[12px] font-medium', pct >= 70 ? 'text-sage' : pct >= 40 ? 'text-warning' : 'text-danger')}>
               {pct >= 70 ? 'Bastante seguro' : pct >= 40 ? 'No muy seguro' : 'Poco seguro'} · {pct}%
             </p>
